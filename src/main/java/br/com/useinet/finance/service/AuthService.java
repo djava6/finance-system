@@ -7,14 +7,24 @@ import br.com.useinet.finance.dto.RegisterRequest;
 import br.com.useinet.finance.model.RefreshToken;
 import br.com.useinet.finance.model.Usuario;
 import br.com.useinet.finance.repository.UsuarioRepository;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.gson.GsonFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
+
 @Service
 public class AuthService {
+
+    @Value("${google.client-id}")
+    private String googleClientId;
 
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
@@ -77,6 +87,50 @@ public class AuthService {
 
     public void logout(Usuario usuario) {
         refreshTokenService.deleteByUsuario(usuario);
+    }
+
+    @Transactional
+    public AuthResponse loginWithGoogle(String idTokenString) {
+        GoogleIdToken.Payload payload = verifyGoogleToken(idTokenString);
+        String email = payload.getEmail();
+        String name = (String) payload.get("name");
+        String providerId = payload.getSubject();
+
+        Usuario usuario = usuarioRepository.findByProviderAndProviderId("google", providerId)
+                .orElseGet(() -> usuarioRepository.findByEmail(email)
+                        .map(existing -> {
+                            existing.setProvider("google");
+                            existing.setProviderId(providerId);
+                            return usuarioRepository.save(existing);
+                        })
+                        .orElseGet(() -> {
+                            Usuario novo = new Usuario();
+                            novo.setNome(name != null ? name : email);
+                            novo.setEmail(email);
+                            novo.setProvider("google");
+                            novo.setProviderId(providerId);
+                            return usuarioRepository.save(novo);
+                        }));
+
+        return buildAuthResponse(usuario);
+    }
+
+    private GoogleIdToken.Payload verifyGoogleToken(String idTokenString) {
+        try {
+            GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(
+                    new NetHttpTransport(), GsonFactory.getDefaultInstance())
+                    .setAudience(Collections.singletonList(googleClientId))
+                    .build();
+            GoogleIdToken idToken = verifier.verify(idTokenString);
+            if (idToken == null) {
+                throw new IllegalArgumentException("Token do Google inválido.");
+            }
+            return idToken.getPayload();
+        } catch (IllegalArgumentException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Falha ao verificar token do Google.");
+        }
     }
 
     private AuthResponse buildAuthResponse(Usuario usuario) {

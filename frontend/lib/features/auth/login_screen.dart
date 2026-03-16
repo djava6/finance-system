@@ -15,6 +15,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _senhaController = TextEditingController();
   bool _loading = false;
+  bool _loadingGoogle = false;
   bool _obscureSenha = true;
 
   @override
@@ -22,6 +23,21 @@ class _LoginScreenState extends State<LoginScreen> {
     _emailController.dispose();
     _senhaController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loginWithGoogle() async {
+    setState(() => _loadingGoogle = true);
+    try {
+      await context.read<AuthProvider>().loginWithGoogle();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _loadingGoogle = false);
+    }
   }
 
   Future<void> _login() async {
@@ -101,6 +117,26 @@ class _LoginScreenState extends State<LoginScreen> {
                             width: 20,
                             child: CircularProgressIndicator(strokeWidth: 2))
                         : const Text('Entrar'),
+                  ),
+                  const SizedBox(height: 12),
+                  const Row(children: [
+                    Expanded(child: Divider()),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 8),
+                      child: Text('ou'),
+                    ),
+                    Expanded(child: Divider()),
+                  ]),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: _loadingGoogle ? null : _loginWithGoogle,
+                    icon: _loadingGoogle
+                        ? const SizedBox(
+                            height: 18,
+                            width: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2))
+                        : const Icon(Icons.login),
+                    label: const Text('Entrar com Google'),
                   ),
                   const SizedBox(height: 12),
                   TextButton(

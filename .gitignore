@@ -39,6 +39,10 @@ build/
 .env
 *.env
 
+### Google OAuth credentials ###
+client_secret_*.json
+client_*.plist
+
 ### Logs ###
 *.log
 
