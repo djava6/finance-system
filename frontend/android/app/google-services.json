@@ -12,7 +12,12 @@
           "package_name": "br.com.useinet.finance_app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "314412565105-tr6uosfp0a93jv9v97m587on08g0pud1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDegOR-8Q3DjQercHvykHqUwEjZxIEE8Y8"
@@ -20,7 +25,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "314412565105-tr6uosfp0a93jv9v97m587on08g0pud1.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "314412565105-jgbfi26ao1t8oh1sa4sm8dtlc0t3bhsb.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "br.com.useinet.financeApp"
+              }
+            }
+          ]
         }
       }
     }

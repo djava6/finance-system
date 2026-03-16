@@ -46,7 +46,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '314412565105',
     projectId: 'finance-app-4f54c',
     storageBucket: 'finance-app-4f54c.firebasestorage.app',
-    iosClientId: '845670274575-bie8pnj6adnrer0kg6k7dsodudj1j921.apps.googleusercontent.com',
+    iosClientId: '314412565105-jgbfi26ao1t8oh1sa4sm8dtlc0t3bhsb.apps.googleusercontent.com',
     iosBundleId: 'br.com.useinet.financeApp',
   );
 }
