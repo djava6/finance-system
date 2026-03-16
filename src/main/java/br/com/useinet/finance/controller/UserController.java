@@ -16,11 +16,16 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.regex.Pattern;
+
 @RestController
 @RequestMapping("/users")
 @Tag(name = "Usuários", description = "Perfil do usuário autenticado")
 @SecurityRequirement(name = "Bearer Authentication")
 public class UserController {
+
+    private static final Pattern EMAIL_PATTERN =
+            Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
 
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
@@ -44,6 +49,16 @@ public class UserController {
             throw new IllegalArgumentException("Nome não pode ser vazio.");
         }
         usuario.setNome(request.getNome().trim());
+        if (request.getEmail() != null && !request.getEmail().isBlank()) {
+            String email = request.getEmail().trim();
+            if (!EMAIL_PATTERN.matcher(email).matches()) {
+                throw new IllegalArgumentException("E-mail inválido.");
+            }
+            if (usuarioRepository.findByEmail(email).filter(u -> !u.getId().equals(usuario.getId())).isPresent()) {
+                throw new IllegalArgumentException("E-mail já está em uso.");
+            }
+            usuario.setEmail(email);
+        }
         if (request.getSenha() != null && !request.getSenha().isBlank()) {
             if (request.getSenha().length() < 6) {
                 throw new IllegalArgumentException("Senha deve ter no mínimo 6 caracteres.");
