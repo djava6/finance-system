@@ -86,3 +86,42 @@ jobs:
             --set-env-vars "SPRING_PROFILES_ACTIVE=prod" \
             --service-account "finance-system-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com" \
             --project ${{ secrets.GCP_PROJECT_ID }}
+
+  # ─────────────────────────────────────
+  # Job 3: Flutter Web (apenas main)
+  # ─────────────────────────────────────
+  deploy-frontend:
+    name: Build Flutter Web & Deploy to GCS
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2.18.0
+        with:
+          flutter-version: '3.27.4'
+          channel: 'stable'
+          cache: true
+
+      - name: Flutter build web
+        working-directory: frontend
+        run: |
+          flutter pub get
+          flutter build web --release \
+            --dart-define=API_URL=https://finance-system-zv4dye6hcq-uc.a.run.app
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2.1.7
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+
+      - name: Deploy to Cloud Storage
+        run: |
+          gcloud storage rsync frontend/build/web gs://finance-system-web \
+            --recursive \
+            --delete-unmatched-destination-objects \
+            --project ${{ secrets.GCP_PROJECT_ID }}
