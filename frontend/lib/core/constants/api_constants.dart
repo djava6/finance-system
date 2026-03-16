@@ -1,9 +1,8 @@
 class ApiConstants {
-  // Desenvolvimento local
-  static const String baseUrl = 'http://localhost:8080';
-
-  // Produção (Cloud Run) — substitua pela URL gerada no deploy
-  // static const String baseUrl = 'https://finance-system-xxxx-uc.a.run.app';
+  static const String baseUrl = String.fromEnvironment(
+    'API_URL',
+    defaultValue: 'http://localhost:8080',
+  );
 
   static const String register = '$baseUrl/auth/register';
   static const String login = '$baseUrl/auth/login';
