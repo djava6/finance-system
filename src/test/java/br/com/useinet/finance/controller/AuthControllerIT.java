@@ -138,4 +138,18 @@ class AuthControllerIT {
         ResponseEntity<String> response = restTemplate.postForEntity("/auth/register", request, String.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
+
+    @Test
+    void googleAuth_shouldReturn400ForInvalidToken() {
+        var request = Map.of("idToken", "invalid-google-token");
+        ResponseEntity<String> response = restTemplate.postForEntity("/auth/google", request, String.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void googleAuth_shouldReturn400ForEmptyToken() {
+        var request = Map.of("idToken", "");
+        ResponseEntity<String> response = restTemplate.postForEntity("/auth/google", request, String.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
 }
