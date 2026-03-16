@@ -170,4 +170,38 @@ class TransacaoControllerIT {
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getHeaders().getContentType().toString()).contains("text/csv");
     }
+
+    @Test
+    void exportarCsv_shouldContainContaColumn() {
+        var createReq = Map.of("descricao", "CSV Conta", "valor", 100.0, "tipo", "DESPESA");
+        restTemplate.exchange("/transactions", HttpMethod.POST,
+                new HttpEntity<>(createReq, authHeaders()), TransacaoResponse.class);
+
+        ResponseEntity<byte[]> response = restTemplate.exchange(
+                "/transactions/export/csv", HttpMethod.GET,
+                new HttpEntity<>(authHeaders()), byte[].class);
+
+        String csv = new String(response.getBody(), java.nio.charset.StandardCharsets.UTF_8);
+        assertThat(csv).contains("Conta");
+    }
+
+    @Test
+    void criar_comConta_shouldReturnContaIdNaResposta() {
+        // criar conta
+        var contaReq = Map.of("nome", "Nubank", "saldo", 1000.0);
+        ResponseEntity<Map> contaResp = restTemplate.exchange(
+                "/contas", HttpMethod.POST,
+                new HttpEntity<>(contaReq, authHeaders()), Map.class);
+        Integer contaId = (Integer) contaResp.getBody().get("id");
+
+        // criar transação vinculada à conta
+        var request = Map.of("descricao", "Mercado", "valor", 200.0, "tipo", "DESPESA", "contaId", contaId);
+        ResponseEntity<TransacaoResponse> response = restTemplate.exchange(
+                "/transactions", HttpMethod.POST,
+                new HttpEntity<>(request, authHeaders()), TransacaoResponse.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(response.getBody().getContaId()).isEqualTo(contaId.longValue());
+        assertThat(response.getBody().getConta()).isEqualTo("Nubank");
+    }
 }

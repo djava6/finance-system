@@ -3,10 +3,12 @@ package br.com.useinet.finance.service;
 import br.com.useinet.finance.dto.TransacaoRequest;
 import br.com.useinet.finance.dto.TransacaoResponse;
 import br.com.useinet.finance.model.Categoria;
+import br.com.useinet.finance.model.Conta;
 import br.com.useinet.finance.model.TipoTransacao;
 import br.com.useinet.finance.model.Transacao;
 import br.com.useinet.finance.model.Usuario;
 import br.com.useinet.finance.repository.CategoriaRepository;
+import br.com.useinet.finance.repository.ContaRepository;
 import br.com.useinet.finance.repository.TransacaoRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,6 +33,8 @@ class TransacaoServiceTest {
     private TransacaoRepository transacaoRepository;
     @Mock
     private CategoriaRepository categoriaRepository;
+    @Mock
+    private ContaRepository contaRepository;
 
     @InjectMocks
     private TransacaoService transacaoService;
@@ -110,7 +114,149 @@ class TransacaoServiceTest {
 
         TransacaoResponse response = transacaoService.criar(request, usuarioMock());
 
+        assertThat(response.getCategoriaId()).isEqualTo(1L);
         assertThat(response.getCategoria()).isEqualTo("Alimentação");
+    }
+
+    @Test
+    void criar_shouldAssociarContaEAjustarSaldo() {
+        Usuario usuario = usuarioMock();
+
+        Conta conta = new Conta();
+        conta.setId(10L);
+        conta.setNome("Nubank");
+        conta.setSaldo(1000.0);
+
+        TransacaoRequest request = new TransacaoRequest();
+        request.setDescricao("Salário");
+        request.setValor(500.0);
+        request.setTipo(TipoTransacao.RECEITA);
+        request.setContaId(10L);
+
+        Transacao saved = new Transacao();
+        saved.setDescricao("Salário");
+        saved.setValor(500.0);
+        saved.setTipo(TipoTransacao.RECEITA);
+        saved.setData(LocalDateTime.now());
+        saved.setConta(conta);
+
+        when(contaRepository.findByIdAndUsuario(10L, usuario)).thenReturn(Optional.of(conta));
+        when(transacaoRepository.save(any())).thenReturn(saved);
+
+        TransacaoResponse response = transacaoService.criar(request, usuario);
+
+        assertThat(response.getContaId()).isEqualTo(10L);
+        assertThat(response.getConta()).isEqualTo("Nubank");
+        assertThat(conta.getSaldo()).isEqualTo(1500.0);
+        verify(contaRepository).save(conta);
+    }
+
+    @Test
+    void criar_shouldReduzirSaldoParaDespesa() {
+        Usuario usuario = usuarioMock();
+
+        Conta conta = new Conta();
+        conta.setId(10L);
+        conta.setNome("Nubank");
+        conta.setSaldo(1000.0);
+
+        TransacaoRequest request = new TransacaoRequest();
+        request.setDescricao("Mercado");
+        request.setValor(200.0);
+        request.setTipo(TipoTransacao.DESPESA);
+        request.setContaId(10L);
+
+        Transacao saved = new Transacao();
+        saved.setDescricao("Mercado");
+        saved.setValor(200.0);
+        saved.setTipo(TipoTransacao.DESPESA);
+        saved.setData(LocalDateTime.now());
+        saved.setConta(conta);
+
+        when(contaRepository.findByIdAndUsuario(10L, usuario)).thenReturn(Optional.of(conta));
+        when(transacaoRepository.save(any())).thenReturn(saved);
+
+        transacaoService.criar(request, usuario);
+
+        assertThat(conta.getSaldo()).isEqualTo(800.0);
+    }
+
+    @Test
+    void criar_shouldThrowWhenContaNaoEncontrada() {
+        Usuario usuario = usuarioMock();
+
+        TransacaoRequest request = new TransacaoRequest();
+        request.setDescricao("Test");
+        request.setValor(100.0);
+        request.setTipo(TipoTransacao.DESPESA);
+        request.setContaId(99L);
+
+        when(contaRepository.findByIdAndUsuario(99L, usuario)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> transacaoService.criar(request, usuario))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Conta não encontrada");
+    }
+
+    @Test
+    void deletar_shouldReverterSaldoConta() {
+        Usuario usuario = usuarioMock();
+
+        Conta conta = new Conta();
+        conta.setId(10L);
+        conta.setSaldo(800.0);
+
+        Transacao transacao = new Transacao();
+        transacao.setDescricao("Mercado");
+        transacao.setValor(200.0);
+        transacao.setTipo(TipoTransacao.DESPESA);
+        transacao.setConta(conta);
+
+        when(transacaoRepository.findByIdAndUsuario(1L, usuario)).thenReturn(Optional.of(transacao));
+
+        transacaoService.deletar(1L, usuario);
+
+        assertThat(conta.getSaldo()).isEqualTo(1000.0);
+        verify(contaRepository).save(conta);
+        verify(transacaoRepository).delete(transacao);
+    }
+
+    @Test
+    void atualizar_shouldReverterContaAnteriorEAplicarNova() {
+        Usuario usuario = usuarioMock();
+
+        Conta contaAntiga = new Conta();
+        contaAntiga.setId(1L);
+        contaAntiga.setSaldo(800.0);
+
+        Conta contaNova = new Conta();
+        contaNova.setId(2L);
+        contaNova.setNome("Inter");
+        contaNova.setSaldo(500.0);
+
+        Transacao existing = new Transacao();
+        existing.setDescricao("Original");
+        existing.setValor(200.0);
+        existing.setTipo(TipoTransacao.DESPESA);
+        existing.setData(LocalDateTime.now());
+        existing.setConta(contaAntiga);
+
+        TransacaoRequest request = new TransacaoRequest();
+        request.setDescricao("Atualizado");
+        request.setValor(300.0);
+        request.setTipo(TipoTransacao.DESPESA);
+        request.setContaId(2L);
+
+        when(transacaoRepository.findByIdAndUsuario(1L, usuario)).thenReturn(Optional.of(existing));
+        when(contaRepository.findByIdAndUsuario(2L, usuario)).thenReturn(Optional.of(contaNova));
+        when(transacaoRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        transacaoService.atualizar(1L, request, usuario);
+
+        // saldo da conta antiga deve ser revertido (despesa de 200 desfeita → +200)
+        assertThat(contaAntiga.getSaldo()).isEqualTo(1000.0);
+        // saldo da conta nova deve ser ajustado (despesa de 300 → -300)
+        assertThat(contaNova.getSaldo()).isEqualTo(200.0);
     }
 
     @Test
