@@ -107,15 +107,20 @@ jobs:
           channel: 'stable'
           cache: true
 
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2.1.7
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+
       - name: Flutter build web
         working-directory: frontend
         run: |
           flutter pub get
           flutter build web --release \
+            --no-wasm-dry-run \
             --dart-define=API_URL=https://finance-system-zv4dye6hcq-uc.a.run.app
 
       - name: Deploy to Firebase Hosting
         run: |
           npx firebase-tools deploy --only hosting \
-            --token ${{ secrets.FIREBASE_TOKEN }} \
             --non-interactive
