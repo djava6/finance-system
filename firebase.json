@@ -1,6 +1,7 @@
 {
   "hosting": {
-"public": "frontend/build/web",
+    "site": "finance-app-4f54c",
+    "public": "frontend/build/web",
     "ignore": [
       "firebase.json",
       "**/.*",
