@@ -111,17 +111,10 @@ jobs:
         run: |
           flutter pub get
           flutter build web --release \
-            --base-href /finance-system-web/ \
             --dart-define=API_URL=https://finance-system-zv4dye6hcq-uc.a.run.app
 
-      - name: Authenticate to GCP
-        uses: google-github-actions/auth@v2.1.7
-        with:
-          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
-
-      - name: Deploy to Cloud Storage
+      - name: Deploy to Firebase Hosting
         run: |
-          gcloud storage rsync frontend/build/web gs://finance-system-web \
-            --recursive \
-            --delete-unmatched-destination-objects \
-            --project ${{ secrets.GCP_PROJECT_ID }}
+          npx firebase-tools deploy --only hosting \
+            --token ${{ secrets.FIREBASE_TOKEN }} \
+            --non-interactive
