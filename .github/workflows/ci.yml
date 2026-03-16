@@ -111,6 +111,7 @@ jobs:
         run: |
           flutter pub get
           flutter build web --release \
+            --base-href /finance-system-web/ \
             --dart-define=API_URL=https://finance-system-zv4dye6hcq-uc.a.run.app
 
       - name: Authenticate to GCP
