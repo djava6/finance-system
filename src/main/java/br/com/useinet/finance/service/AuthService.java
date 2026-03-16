@@ -126,8 +126,6 @@ public class AuthService {
                 throw new IllegalArgumentException("Token do Google inválido.");
             }
             return idToken.getPayload();
-        } catch (IllegalArgumentException e) {
-            throw e;
         } catch (Exception e) {
             throw new IllegalArgumentException("Falha ao verificar token do Google.");
         }
