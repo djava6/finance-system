@@ -23,32 +23,30 @@ class DefaultFirebaseOptions {
     }
   }
 
-  // TODO: Replace with actual values from Firebase Console
-  // Run `flutterfire configure --project=finance-app-4f54c` to generate this file automatically
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'REPLACE_WITH_WEB_API_KEY',
-    appId: 'REPLACE_WITH_WEB_APP_ID',
-    messagingSenderId: 'REPLACE_WITH_SENDER_ID',
+    apiKey: 'AIzaSyCBnA1YfsdAo7LR7dG3PE86GIPcOX40Ej4',
+    appId: '1:314412565105:web:e998440fcb7cc59cf851d0',
+    messagingSenderId: '314412565105',
     projectId: 'finance-app-4f54c',
     authDomain: 'finance-app-4f54c.firebaseapp.com',
     storageBucket: 'finance-app-4f54c.firebasestorage.app',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'REPLACE_WITH_ANDROID_API_KEY',
-    appId: 'REPLACE_WITH_ANDROID_APP_ID',
-    messagingSenderId: 'REPLACE_WITH_SENDER_ID',
+    apiKey: 'AIzaSyDegOR-8Q3DjQercHvykHqUwEjZxIEE8Y8',
+    appId: '1:314412565105:android:00b777f42affb6d7f851d0',
+    messagingSenderId: '314412565105',
     projectId: 'finance-app-4f54c',
     storageBucket: 'finance-app-4f54c.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'REPLACE_WITH_IOS_API_KEY',
-    appId: 'REPLACE_WITH_IOS_APP_ID',
-    messagingSenderId: 'REPLACE_WITH_SENDER_ID',
+    apiKey: 'AIzaSyDIznH7hc_5m0Ml7Ots4ZkmGcAL3a38NSM',
+    appId: '1:314412565105:ios:2fbe9af4ca94b4d2f851d0',
+    messagingSenderId: '314412565105',
     projectId: 'finance-app-4f54c',
     storageBucket: 'finance-app-4f54c.firebasestorage.app',
-    iosClientId: 'REPLACE_WITH_IOS_CLIENT_ID',
+    iosClientId: '845670274575-bie8pnj6adnrer0kg6k7dsodudj1j921.apps.googleusercontent.com',
     iosBundleId: 'br.com.useinet.financeApp',
   );
 }
