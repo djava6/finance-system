@@ -149,7 +149,7 @@ public class TransacaoService {
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
         StringBuilder csv = new StringBuilder();
         csv.append('\uFEFF'); // BOM para compatibilidade com Excel
-        csv.append("ID,Descrição,Valor,Tipo,Data,Categoria\n");
+        csv.append("ID,Descrição,Valor,Tipo,Data,Categoria,Conta\n");
 
         transacaoRepository.findByUsuarioOrderByDataDesc(usuario).forEach(t -> {
             csv.append(t.getId()).append(',')
@@ -157,7 +157,8 @@ public class TransacaoService {
                .append(t.getValor()).append(',')
                .append(t.getTipo()).append(',')
                .append(t.getData().format(fmt)).append(',')
-               .append(t.getCategoria() != null ? escapeCsv(t.getCategoria().getNome()) : "")
+               .append(t.getCategoria() != null ? escapeCsv(t.getCategoria().getNome()) : "").append(',')
+               .append(t.getConta() != null ? escapeCsv(t.getConta().getNome()) : "")
                .append('\n');
         });
 

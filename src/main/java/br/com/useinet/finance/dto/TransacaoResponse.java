@@ -11,7 +11,9 @@ public class TransacaoResponse {
     private Double valor;
     private TipoTransacao tipo;
     private LocalDateTime data;
+    private Long categoriaId;
     private String categoria;
+    private Long contaId;
     private String conta;
 
     public static TransacaoResponse from(Transacao transacao) {
@@ -21,40 +23,24 @@ public class TransacaoResponse {
         response.valor = transacao.getValor();
         response.tipo = transacao.getTipo();
         response.data = transacao.getData();
-        response.categoria = transacao.getCategoria() != null
-                ? transacao.getCategoria().getNome()
-                : null;
-        response.conta = transacao.getConta() != null
-                ? transacao.getConta().getNome()
-                : null;
+        if (transacao.getCategoria() != null) {
+            response.categoriaId = transacao.getCategoria().getId();
+            response.categoria = transacao.getCategoria().getNome();
+        }
+        if (transacao.getConta() != null) {
+            response.contaId = transacao.getConta().getId();
+            response.conta = transacao.getConta().getNome();
+        }
         return response;
     }
 
-    public Long getId() {
-        return id;
-    }
-
-    public String getDescricao() {
-        return descricao;
-    }
-
-    public Double getValor() {
-        return valor;
-    }
-
-    public TipoTransacao getTipo() {
-        return tipo;
-    }
-
-    public LocalDateTime getData() {
-        return data;
-    }
-
-    public String getCategoria() {
-        return categoria;
-    }
-
-    public String getConta() {
-        return conta;
-    }
+    public Long getId() { return id; }
+    public String getDescricao() { return descricao; }
+    public Double getValor() { return valor; }
+    public TipoTransacao getTipo() { return tipo; }
+    public LocalDateTime getData() { return data; }
+    public Long getCategoriaId() { return categoriaId; }
+    public String getCategoria() { return categoria; }
+    public Long getContaId() { return contaId; }
+    public String getConta() { return conta; }
 }

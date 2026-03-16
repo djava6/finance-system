@@ -51,23 +51,11 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
         _contaService.listar(token),
       ]);
       if (mounted) {
-        final cats = results[0] as List<CategoriaModel>;
-        final contas = results[1] as List<ContaModel>;
         setState(() {
-          _categorias = cats;
-          _contas = contas;
-          if (widget.transaction.categoria != null) {
-            _categoriaId = cats
-                .where((c) => c.nome == widget.transaction.categoria)
-                .map((c) => c.id)
-                .firstOrNull;
-          }
-          if (widget.transaction.conta != null) {
-            _contaId = contas
-                .where((c) => c.nome == widget.transaction.conta)
-                .map((c) => c.id)
-                .firstOrNull;
-          }
+          _categorias = results[0] as List<CategoriaModel>;
+          _contas = results[1] as List<ContaModel>;
+          _categoriaId = widget.transaction.categoriaId;
+          _contaId = widget.transaction.contaId;
         });
       }
     } catch (_) {}
