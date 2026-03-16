@@ -152,6 +152,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
         const SizedBox(height: 20),
 
+        // ── Contas ───────────────────────────────────
+        if (d.contas.isNotEmpty) ...[
+          Text('Contas', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          Card(
+            child: Column(
+              children: d.contas.map((c) {
+                return ListTile(
+                  leading: const Icon(Icons.account_balance_outlined),
+                  title: Text(c.nome),
+                  trailing: Text(
+                    _currency.format(c.saldo),
+                    style: TextStyle(
+                      color: c.saldo >= 0 ? Colors.green : Colors.red,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 20),
+        ],
+
         // ── Gráfico de despesas por categoria ───────
         if (d.despesasPorCategoria.isNotEmpty) ...[
           Text('Despesas por categoria',

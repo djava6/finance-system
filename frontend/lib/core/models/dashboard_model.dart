@@ -1,3 +1,4 @@
+import '../models/conta_model.dart';
 import '../models/transaction_model.dart';
 
 class EvolucaoMensalModel {
@@ -39,6 +40,7 @@ class DashboardModel {
   final double saldo;
   final double totalReceitas;
   final double totalDespesas;
+  final List<ContaModel> contas;
   final List<TransactionModel> ultimasTransacoes;
   final List<DespesaPorCategoriaModel> despesasPorCategoria;
   final List<EvolucaoMensalModel> evolucaoMensal;
@@ -47,6 +49,7 @@ class DashboardModel {
     required this.saldo,
     required this.totalReceitas,
     required this.totalDespesas,
+    required this.contas,
     required this.ultimasTransacoes,
     required this.despesasPorCategoria,
     required this.evolucaoMensal,
@@ -57,6 +60,9 @@ class DashboardModel {
       saldo: (json['saldo'] as num).toDouble(),
       totalReceitas: (json['totalReceitas'] as num).toDouble(),
       totalDespesas: (json['totalDespesas'] as num).toDouble(),
+      contas: (json['contas'] as List? ?? [])
+          .map((e) => ContaModel.fromJson(e as Map<String, dynamic>))
+          .toList(),
       ultimasTransacoes: (json['ultimasTransacoes'] as List? ?? [])
           .map((e) => TransactionModel.fromJson(e as Map<String, dynamic>))
           .toList(),
