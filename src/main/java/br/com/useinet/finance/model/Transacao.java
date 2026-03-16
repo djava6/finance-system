@@ -1,6 +1,5 @@
 package br.com.useinet.finance.model;
 
-import br.com.useinet.finance.model.Conta;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

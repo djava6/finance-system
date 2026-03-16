@@ -64,7 +64,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ? _senhaController.text
           : null;
       final updated = await _service.updateProfile(
-          token, _nomeController.text.trim(), senha);
+          token, _nomeController.text.trim(), senha, null);
 
       // Update nome in AuthProvider
       if (mounted) {

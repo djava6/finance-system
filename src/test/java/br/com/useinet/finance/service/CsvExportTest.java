@@ -4,7 +4,6 @@ import br.com.useinet.finance.model.Categoria;
 import br.com.useinet.finance.model.TipoTransacao;
 import br.com.useinet.finance.model.Transacao;
 import br.com.useinet.finance.model.Usuario;
-import br.com.useinet.finance.repository.CategoriaRepository;
 import br.com.useinet.finance.repository.TransacaoRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,8 +23,6 @@ class CsvExportTest {
 
     @Mock
     private TransacaoRepository transacaoRepository;
-    @Mock
-    private CategoriaRepository categoriaRepository;
 
     @InjectMocks
     private TransacaoService transacaoService;
@@ -50,7 +47,7 @@ class CsvExportTest {
         assertThat(csv[1]).isEqualTo((byte) 0xBB);
         assertThat(csv[2]).isEqualTo((byte) 0xBF);
 
-        assertThat(content).contains("ID,Descrição,Valor,Tipo,Data,Categoria");
+        assertThat(content).contains("ID,Descrição,Valor,Tipo,Data,Categoria,Conta");
     }
 
     @Test
