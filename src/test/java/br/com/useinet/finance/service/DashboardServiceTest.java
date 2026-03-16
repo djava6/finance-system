@@ -4,6 +4,7 @@ import br.com.useinet.finance.dto.DashboardResponse;
 import br.com.useinet.finance.model.TipoTransacao;
 import br.com.useinet.finance.model.Transacao;
 import br.com.useinet.finance.model.Usuario;
+import br.com.useinet.finance.repository.ContaRepository;
 import br.com.useinet.finance.repository.TransacaoRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,6 +24,9 @@ class DashboardServiceTest {
     @Mock
     private TransacaoRepository transacaoRepository;
 
+    @Mock
+    private ContaRepository contaRepository;
+
     @InjectMocks
     private DashboardService dashboardService;
 
@@ -39,6 +43,7 @@ class DashboardServiceTest {
 
         when(transacaoRepository.sumValorByUsuarioAndTipo(usuario, TipoTransacao.RECEITA)).thenReturn(5000.0);
         when(transacaoRepository.sumValorByUsuarioAndTipo(usuario, TipoTransacao.DESPESA)).thenReturn(1500.0);
+        when(contaRepository.findByUsuario(usuario)).thenReturn(List.of());
         when(transacaoRepository.findTop10ByUsuarioOrderByDataDesc(usuario)).thenReturn(List.of());
         when(transacaoRepository.findDespesasPorCategoria(usuario, TipoTransacao.DESPESA)).thenReturn(List.of());
 
@@ -61,6 +66,7 @@ class DashboardServiceTest {
 
         when(transacaoRepository.sumValorByUsuarioAndTipo(usuario, TipoTransacao.RECEITA)).thenReturn(5000.0);
         when(transacaoRepository.sumValorByUsuarioAndTipo(usuario, TipoTransacao.DESPESA)).thenReturn(0.0);
+        when(contaRepository.findByUsuario(usuario)).thenReturn(List.of());
         when(transacaoRepository.findTop10ByUsuarioOrderByDataDesc(usuario)).thenReturn(List.of(t));
         when(transacaoRepository.findDespesasPorCategoria(usuario, TipoTransacao.DESPESA)).thenReturn(List.of());
 
@@ -76,6 +82,7 @@ class DashboardServiceTest {
 
         when(transacaoRepository.sumValorByUsuarioAndTipo(usuario, TipoTransacao.RECEITA)).thenReturn(0.0);
         when(transacaoRepository.sumValorByUsuarioAndTipo(usuario, TipoTransacao.DESPESA)).thenReturn(800.0);
+        when(contaRepository.findByUsuario(usuario)).thenReturn(List.of());
         when(transacaoRepository.findTop10ByUsuarioOrderByDataDesc(usuario)).thenReturn(List.of());
         when(transacaoRepository.findDespesasPorCategoria(usuario, TipoTransacao.DESPESA)).thenReturn(List.of(
                 new Object[]{"Alimentação", 500.0},
@@ -95,6 +102,7 @@ class DashboardServiceTest {
 
         when(transacaoRepository.sumValorByUsuarioAndTipo(usuario, TipoTransacao.RECEITA)).thenReturn(3000.0);
         when(transacaoRepository.sumValorByUsuarioAndTipo(usuario, TipoTransacao.DESPESA)).thenReturn(1000.0);
+        when(contaRepository.findByUsuario(usuario)).thenReturn(List.of());
         when(transacaoRepository.findTop10ByUsuarioOrderByDataDesc(usuario)).thenReturn(List.of());
         when(transacaoRepository.findDespesasPorCategoria(usuario, TipoTransacao.DESPESA)).thenReturn(List.of());
         when(transacaoRepository.findEvolucaoMensal(usuario)).thenReturn(List.of(
