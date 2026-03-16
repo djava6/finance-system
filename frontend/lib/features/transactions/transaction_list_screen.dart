@@ -1,9 +1,7 @@
-import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
+import '../../core/utils/file_saver.dart';
 import '../../core/models/transaction_model.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/services/transaction_service.dart';
@@ -81,13 +79,11 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
     try {
       final token = context.read<AuthProvider>().token!;
       final bytes = await _service.exportarCsv(token);
-      final dir = await getTemporaryDirectory();
-      final file = File('${dir.path}/transacoes.csv');
-      await file.writeAsBytes(Uint8List.fromList(bytes));
+      final path = await saveFile(bytes, 'transacoes.csv');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('CSV salvo em ${file.path}'),
+            content: Text('CSV salvo em $path'),
             action: SnackBarAction(label: 'OK', onPressed: () {}),
           ),
         );
