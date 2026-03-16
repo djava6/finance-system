@@ -1,11 +1,13 @@
 package br.com.useinet.finance.service;
 
+import br.com.useinet.finance.dto.ContaResponse;
 import br.com.useinet.finance.dto.DashboardResponse;
 import br.com.useinet.finance.dto.DespesaPorCategoriaResponse;
 import br.com.useinet.finance.dto.EvolucaoMensalResponse;
 import br.com.useinet.finance.dto.TransacaoResponse;
 import br.com.useinet.finance.model.TipoTransacao;
 import br.com.useinet.finance.model.Usuario;
+import br.com.useinet.finance.repository.ContaRepository;
 import br.com.useinet.finance.repository.TransacaoRepository;
 import org.springframework.stereotype.Service;
 
@@ -18,14 +20,21 @@ import java.util.Map;
 public class DashboardService {
 
     private final TransacaoRepository transacaoRepository;
+    private final ContaRepository contaRepository;
 
-    public DashboardService(TransacaoRepository transacaoRepository) {
+    public DashboardService(TransacaoRepository transacaoRepository, ContaRepository contaRepository) {
         this.transacaoRepository = transacaoRepository;
+        this.contaRepository = contaRepository;
     }
 
     public DashboardResponse getDashboard(Usuario usuario) {
         Double totalReceitas = transacaoRepository.sumValorByUsuarioAndTipo(usuario, TipoTransacao.RECEITA);
         Double totalDespesas = transacaoRepository.sumValorByUsuarioAndTipo(usuario, TipoTransacao.DESPESA);
+
+        List<ContaResponse> contas = contaRepository.findByUsuario(usuario)
+                .stream()
+                .map(ContaResponse::from)
+                .toList();
 
         List<TransacaoResponse> ultimasTransacoes = transacaoRepository
                 .findTop10ByUsuarioOrderByDataDesc(usuario)
@@ -41,7 +50,7 @@ public class DashboardService {
 
         List<EvolucaoMensalResponse> evolucaoMensal = buildEvolucaoMensal(usuario);
 
-        return new DashboardResponse(totalReceitas, totalDespesas, ultimasTransacoes,
+        return new DashboardResponse(totalReceitas, totalDespesas, contas, ultimasTransacoes,
                 despesasPorCategoria, evolucaoMensal);
     }
 
