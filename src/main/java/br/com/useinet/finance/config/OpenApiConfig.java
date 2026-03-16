@@ -5,6 +5,7 @@ import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
+import io.swagger.v3.oas.models.servers.Server;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -16,6 +17,12 @@ public class OpenApiConfig {
     @Bean
     public OpenAPI openAPI() {
         return new OpenAPI()
+                .addServersItem(new Server()
+                        .url("https://finance-system-zv4dye6hcq-uc.a.run.app")
+                        .description("Produção (Cloud Run)"))
+                .addServersItem(new Server()
+                        .url("http://localhost:8080")
+                        .description("Local"))
                 .info(new Info()
                         .title("Finance System API")
                         .version("1.0.0")
