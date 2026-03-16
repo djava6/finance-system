@@ -25,8 +25,14 @@ public class Usuario implements UserDetails {
     @Column(unique = true, nullable = false)
     private String email;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private String senha;
+
+    @Column(nullable = true)
+    private String provider;
+
+    @Column(name = "provider_id", nullable = true)
+    private String providerId;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -73,5 +79,21 @@ public class Usuario implements UserDetails {
 
     public void setSenha(String senha) {
         this.senha = senha;
+    }
+
+    public String getProvider() {
+        return provider;
+    }
+
+    public void setProvider(String provider) {
+        this.provider = provider;
+    }
+
+    public String getProviderId() {
+        return providerId;
+    }
+
+    public void setProviderId(String providerId) {
+        this.providerId = providerId;
     }
 }

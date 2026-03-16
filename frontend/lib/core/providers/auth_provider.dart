@@ -35,6 +35,11 @@ class AuthProvider extends ChangeNotifier {
     await _saveSession(response);
   }
 
+  Future<void> loginWithGoogle() async {
+    final response = await _authService.loginWithGoogle();
+    await _saveSession(response);
+  }
+
   void updateNome(String nome) {
     _nome = nome;
     SharedPreferences.getInstance().then((p) => p.setString('nome', nome));

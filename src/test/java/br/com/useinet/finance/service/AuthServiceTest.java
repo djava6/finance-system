@@ -6,6 +6,7 @@ import br.com.useinet.finance.dto.RegisterRequest;
 import br.com.useinet.finance.model.RefreshToken;
 import br.com.useinet.finance.model.Usuario;
 import br.com.useinet.finance.repository.UsuarioRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -14,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Optional;
 
@@ -39,6 +41,11 @@ class AuthServiceTest {
 
     @InjectMocks
     private AuthService authService;
+
+    @BeforeEach
+    void setUp() {
+        ReflectionTestUtils.setField(authService, "googleClientId", "test-client-id");
+    }
 
     private RefreshToken mockRefreshToken() {
         RefreshToken rt = new RefreshToken();
@@ -123,6 +130,19 @@ class AuthServiceTest {
         assertThatThrownBy(() -> authService.register(request))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("E-mail inválido");
+    }
+
+    @Test
+    void loginWithGoogle_shouldThrowForInvalidToken() {
+        assertThatThrownBy(() -> authService.loginWithGoogle("invalid-token"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Falha ao verificar token do Google");
+    }
+
+    @Test
+    void loginWithGoogle_shouldThrowForEmptyToken() {
+        assertThatThrownBy(() -> authService.loginWithGoogle(""))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test

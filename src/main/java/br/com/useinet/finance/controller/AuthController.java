@@ -1,6 +1,7 @@
 package br.com.useinet.finance.controller;
 
 import br.com.useinet.finance.dto.AuthResponse;
+import br.com.useinet.finance.dto.GoogleTokenRequest;
 import br.com.useinet.finance.dto.LoginRequest;
 import br.com.useinet.finance.dto.RefreshRequest;
 import br.com.useinet.finance.dto.RegisterRequest;
@@ -44,6 +45,12 @@ public class AuthController {
     @Operation(summary = "Renovar token", description = "Gera novo JWT usando o refreshToken")
     public ResponseEntity<AuthResponse> refresh(@RequestBody RefreshRequest request) {
         return ResponseEntity.ok(authService.refresh(request));
+    }
+
+    @PostMapping("/google")
+    @Operation(summary = "Login com Google", description = "Autentica via Google ID token e retorna JWT + refreshToken")
+    public ResponseEntity<AuthResponse> googleAuth(@RequestBody GoogleTokenRequest request) {
+        return ResponseEntity.ok(authService.loginWithGoogle(request.getIdToken()));
     }
 
     @PostMapping("/logout")

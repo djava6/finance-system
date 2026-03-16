@@ -1,9 +1,34 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:google_sign_in/google_sign_in.dart';
 import '../constants/api_constants.dart';
 import '../models/auth_response.dart';
 
 class AuthService {
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    serverClientId: '845670274575-0v7qu9okla1spq64ksk6ahb91faed40c.apps.googleusercontent.com',
+  );
+
+  Future<AuthResponse> loginWithGoogle() async {
+    final googleUser = await _googleSignIn.signIn();
+    if (googleUser == null) throw Exception('Login cancelado.');
+
+    final googleAuth = await googleUser.authentication;
+    final idToken = googleAuth.idToken;
+    if (idToken == null) throw Exception('Não foi possível obter o token do Google.');
+
+    final response = await http.post(
+      Uri.parse(ApiConstants.googleAuth),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'idToken': idToken}),
+    );
+
+    if (response.statusCode == 200) {
+      return AuthResponse.fromJson(jsonDecode(response.body));
+    }
+    throw Exception(_extractError(response.body));
+  }
+
   Future<AuthResponse> login(String email, String senha) async {
     final response = await http.post(
       Uri.parse(ApiConstants.login),

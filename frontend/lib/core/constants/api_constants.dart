@@ -8,6 +8,7 @@ class ApiConstants {
   static const String login = '$baseUrl/auth/login';
   static const String refresh = '$baseUrl/auth/refresh';
   static const String logout = '$baseUrl/auth/logout';
+  static const String googleAuth = '$baseUrl/auth/google';
   static const String transactions = '$baseUrl/transactions';
   static const String transactionExportCsv = '$baseUrl/transactions/export/csv';
   static const String dashboard = '$baseUrl/dashboard';
