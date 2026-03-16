@@ -1,0 +1,55 @@
+# Profiles disponíveis:
+#   (padrão) — sobe apenas app + db para desenvolvimento local
+#   cloudsql  — adiciona o Cloud SQL Auth Proxy para conectar ao Cloud SQL real
+#               Uso: docker compose --profile cloudsql up cloud-sql-proxy
+
+services:
+
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/finance
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      JWT_SECRET: ${JWT_SECRET}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: on-failure
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: finance
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d finance"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ── Cloud SQL Auth Proxy (somente para dev com Cloud SQL) ──────────────────
+  # Para usar: docker compose --profile cloudsql up cloud-sql-proxy
+  # Requer: GOOGLE_APPLICATION_CREDENTIALS apontando para service account JSON
+  cloud-sql-proxy:
+    image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.14.1
+    profiles: [cloudsql]
+    command:
+      - "--port=5433"
+      - "$GCP_PROJECT_ID:$GCP_REGION:finance-db"
+    ports:
+      - "5433:5433"
+    volumes:
+      - "${GOOGLE_APPLICATION_CREDENTIALS}:/credentials.json:ro"
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: /credentials.json
+
+volumes:
+  postgres_data:

@@ -1,0 +1,61 @@
+name: Deploy Monitoring Alerts
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'monitoring/alerts.json'
+  workflow_dispatch:
+
+jobs:
+  deploy-alerts:
+    name: Deploy Cloud Monitoring Alert Policies
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2.1.7
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+
+      - name: Setup gcloud CLI
+        uses: google-github-actions/setup-gcloud@v2.1.4
+
+      - name: Install Python (for alert deployment script)
+        uses: actions/setup-python@v5.3.0
+        with:
+          python-version: '3.12'
+
+      - name: Install google-cloud-monitoring
+        run: pip install google-cloud-monitoring
+
+      - name: Deploy alert policies
+        env:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+        run: |
+          python3 - <<'EOF'
+          import json, os
+          from google.cloud import monitoring_v3
+
+          client = monitoring_v3.AlertPolicyServiceClient()
+          project = f"projects/{os.environ['GCP_PROJECT_ID']}"
+
+          with open("monitoring/alerts.json") as f:
+              policies = json.load(f)
+
+          existing = {p.display_name: p.name for p in client.list_alert_policies(name=project)}
+
+          for policy_dict in policies:
+              name = policy_dict["displayName"]
+              if name in existing:
+                  print(f"Skipping existing policy: {name}")
+              else:
+                  from google.protobuf import json_format
+                  from google.cloud.monitoring_v3.types import AlertPolicy
+                  policy = json_format.ParseDict(policy_dict, AlertPolicy()._pb)
+                  result = client.create_alert_policy(name=project, alert_policy=policy)
+                  print(f"Created: {result.name}")
+          EOF

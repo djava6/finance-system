@@ -1,0 +1,89 @@
+[
+  {
+    "displayName": "High Error Rate — Finance System",
+    "documentation": {
+      "content": "Taxa de erros 5xx acima de 5%. Verificar logs no Cloud Logging.",
+      "mimeType": "text/markdown"
+    },
+    "conditions": [
+      {
+        "displayName": "5xx error rate > 0.05",
+        "conditionThreshold": {
+          "filter": "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"finance-system\" AND metric.type=\"run.googleapis.com/request_count\" AND metric.labels.response_code_class=\"5xx\"",
+          "aggregations": [
+            {
+              "alignmentPeriod": "60s",
+              "perSeriesAligner": "ALIGN_RATE"
+            }
+          ],
+          "comparison": "COMPARISON_GT",
+          "thresholdValue": 0.05,
+          "duration": "60s",
+          "trigger": { "count": 1 }
+        }
+      }
+    ],
+    "alertStrategy": { "autoClose": "604800s" },
+    "combiner": "OR",
+    "enabled": true,
+    "notificationChannels": []
+  },
+  {
+    "displayName": "High Latency P99 — Finance System",
+    "documentation": {
+      "content": "Latência P99 acima de 2000ms. Verificar queries lentas no Cloud SQL.",
+      "mimeType": "text/markdown"
+    },
+    "conditions": [
+      {
+        "displayName": "Latency P99 > 2000ms",
+        "conditionThreshold": {
+          "filter": "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"finance-system\" AND metric.type=\"run.googleapis.com/request_latencies\"",
+          "aggregations": [
+            {
+              "alignmentPeriod": "60s",
+              "perSeriesAligner": "ALIGN_PERCENTILE_99"
+            }
+          ],
+          "comparison": "COMPARISON_GT",
+          "thresholdValue": 2000,
+          "duration": "120s",
+          "trigger": { "count": 1 }
+        }
+      }
+    ],
+    "alertStrategy": { "autoClose": "604800s" },
+    "combiner": "OR",
+    "enabled": true,
+    "notificationChannels": []
+  },
+  {
+    "displayName": "Service Uptime — Finance System",
+    "documentation": {
+      "content": "Serviço inacessível. Verificar Cloud Run e Cloud SQL.",
+      "mimeType": "text/markdown"
+    },
+    "conditions": [
+      {
+        "displayName": "Uptime check failed",
+        "conditionThreshold": {
+          "filter": "resource.type=\"uptime_url\" AND metric.type=\"monitoring.googleapis.com/uptime_check/check_passed\" AND metric.labels.check_id=\"finance-system-uptime\"",
+          "aggregations": [
+            {
+              "alignmentPeriod": "60s",
+              "perSeriesAligner": "ALIGN_FRACTION_TRUE"
+            }
+          ],
+          "comparison": "COMPARISON_LT",
+          "thresholdValue": 1,
+          "duration": "60s",
+          "trigger": { "count": 1 }
+        }
+      }
+    ],
+    "alertStrategy": { "autoClose": "604800s" },
+    "combiner": "OR",
+    "enabled": true,
+    "notificationChannels": []
+  }
+]

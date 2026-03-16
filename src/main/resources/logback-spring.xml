@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!-- ── Desenvolvimento / Default ─────────────────────────── -->
+    <springProfile name="!prod">
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>%d{HH:mm:ss.SSS} %highlight(%-5level) %cyan(%logger{36}) - %msg%n</pattern>
+            </encoder>
+        </appender>
+
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+
+        <logger name="br.com.useinet.finance" level="DEBUG"/>
+        <logger name="org.hibernate.SQL" level="DEBUG"/>
+    </springProfile>
+
+    <!-- ── Produção (GCP Cloud Logging) ──────────────────────── -->
+    <springProfile name="prod">
+        <appender name="CLOUD" class="com.google.cloud.logging.logback.LoggingAppender">
+            <log>finance-system</log>
+            <redirectToStdout>true</redirectToStdout>
+            <resourceType>cloud_run_revision</resourceType>
+        </appender>
+
+        <root level="INFO">
+            <appender-ref ref="CLOUD"/>
+        </root>
+
+        <!-- Silencia queries SQL em produção -->
+        <logger name="org.hibernate.SQL" level="WARN"/>
+    </springProfile>
+
+</configuration>

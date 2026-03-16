@@ -1,0 +1,44 @@
+name: Deploy Monitoring Dashboard
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'monitoring/dashboard.json'
+  workflow_dispatch:
+
+jobs:
+  deploy-dashboard:
+    name: Deploy Cloud Monitoring Dashboard
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2.1.7
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+
+      - name: Setup gcloud CLI
+        uses: google-github-actions/setup-gcloud@v2.1.4
+
+      - name: Deploy or update dashboard
+        run: |
+          EXISTING=$(gcloud monitoring dashboards list \
+            --project=${{ secrets.GCP_PROJECT_ID }} \
+            --filter="displayName='Finance System — Overview'" \
+            --format="value(name)" 2>/dev/null || echo "")
+
+          if [ -n "$EXISTING" ]; then
+            echo "Updating existing dashboard: $EXISTING"
+            gcloud monitoring dashboards update "$EXISTING" \
+              --config-from-file=monitoring/dashboard.json \
+              --project=${{ secrets.GCP_PROJECT_ID }}
+          else
+            echo "Creating new dashboard"
+            gcloud monitoring dashboards create \
+              --config-from-file=monitoring/dashboard.json \
+              --project=${{ secrets.GCP_PROJECT_ID }}
+          fi
