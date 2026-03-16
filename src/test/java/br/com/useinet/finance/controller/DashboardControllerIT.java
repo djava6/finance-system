@@ -1,11 +1,13 @@
 package br.com.useinet.finance.controller;
 
-import br.com.useinet.finance.dto.AuthResponse;
 import br.com.useinet.finance.dto.DashboardResponse;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseToken;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.http.HttpEntity;
@@ -20,6 +22,9 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
@@ -32,23 +37,36 @@ class DashboardControllerIT {
     @Autowired
     private TestRestTemplate restTemplate;
 
-    private String token;
+    @MockBean
+    private FirebaseAuth firebaseAuth;
+
+    static final String MOCK_TOKEN = "mock-firebase-token";
+    static final String OTHER_TOKEN = "mock-other-token";
 
     @BeforeEach
-    void setUp() {
-        var register = Map.of("nome", "Dashboard User", "email", "dashboarduser@it.com", "senha", "senha1234");
-        ResponseEntity<AuthResponse> auth = restTemplate.postForEntity("/auth/register", register, AuthResponse.class);
-        if (auth.getBody() != null && auth.getBody().getToken() != null) {
-            token = auth.getBody().getToken();
-        } else {
-            var login = Map.of("email", "dashboarduser@it.com", "senha", "senha1234");
-            token = restTemplate.postForEntity("/auth/login", login, AuthResponse.class).getBody().getToken();
-        }
+    void setUp() throws Exception {
+        FirebaseToken mockToken = mock(FirebaseToken.class);
+        when(mockToken.getUid()).thenReturn("uid-dashboard");
+        when(mockToken.getEmail()).thenReturn("dashboarduser@it.com");
+        when(mockToken.getName()).thenReturn("Dashboard User");
+        when(firebaseAuth.verifyIdToken(eq(MOCK_TOKEN))).thenReturn(mockToken);
+
+        FirebaseToken otherToken = mock(FirebaseToken.class);
+        when(otherToken.getUid()).thenReturn("uid-other-dash");
+        when(otherToken.getEmail()).thenReturn("other_dash@it.com");
+        when(otherToken.getName()).thenReturn("Other");
+        when(firebaseAuth.verifyIdToken(eq(OTHER_TOKEN))).thenReturn(otherToken);
     }
 
     private HttpHeaders authHeaders() {
         HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(token);
+        headers.setBearerAuth(MOCK_TOKEN);
+        return headers;
+    }
+
+    private HttpHeaders otherAuthHeaders() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(OTHER_TOKEN);
         return headers;
     }
 
@@ -115,14 +133,8 @@ class DashboardControllerIT {
 
     @Test
     void getDashboard_shouldNotShowOtherUsersData() {
-        var register2 = Map.of("nome", "Other", "email", "other_dash@it.com", "senha", "senha1234");
-        String otherToken = restTemplate.postForEntity("/auth/register", register2, AuthResponse.class)
-                .getBody().getToken();
-        HttpHeaders otherHeaders = new HttpHeaders();
-        otherHeaders.setBearerAuth(otherToken);
-
         restTemplate.exchange("/transactions", HttpMethod.POST,
-                new HttpEntity<>(Map.of("descricao", "Other income", "valor", 9999.0, "tipo", "RECEITA"), otherHeaders),
+                new HttpEntity<>(Map.of("descricao", "Other income", "valor", 9999.0, "tipo", "RECEITA"), otherAuthHeaders()),
                 Object.class);
 
         ResponseEntity<DashboardResponse> response = restTemplate.exchange(

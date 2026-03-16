@@ -1,11 +1,13 @@
 package br.com.useinet.finance.controller;
 
-import br.com.useinet.finance.dto.AuthResponse;
 import br.com.useinet.finance.dto.UserProfileResponse;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseToken;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.http.HttpEntity;
@@ -20,6 +22,9 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
@@ -32,23 +37,23 @@ class UserControllerIT {
     @Autowired
     private TestRestTemplate restTemplate;
 
-    private String token;
+    @MockBean
+    private FirebaseAuth firebaseAuth;
+
+    static final String MOCK_TOKEN = "mock-firebase-token";
 
     @BeforeEach
-    void setUp() {
-        var register = Map.of("nome", "Profile User", "email", "profileuser@it.com", "senha", "senha123");
-        ResponseEntity<AuthResponse> auth = restTemplate.postForEntity("/auth/register", register, AuthResponse.class);
-        if (auth.getBody() != null && auth.getBody().getToken() != null) {
-            token = auth.getBody().getToken();
-        } else {
-            var login = Map.of("email", "profileuser@it.com", "senha", "senha123");
-            token = restTemplate.postForEntity("/auth/login", login, AuthResponse.class).getBody().getToken();
-        }
+    void setUp() throws Exception {
+        FirebaseToken mockToken = mock(FirebaseToken.class);
+        when(mockToken.getUid()).thenReturn("uid-profile");
+        when(mockToken.getEmail()).thenReturn("profileuser@it.com");
+        when(mockToken.getName()).thenReturn("Profile User");
+        when(firebaseAuth.verifyIdToken(eq(MOCK_TOKEN))).thenReturn(mockToken);
     }
 
     private HttpHeaders authHeaders() {
         HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(token);
+        headers.setBearerAuth(MOCK_TOKEN);
         return headers;
     }
 

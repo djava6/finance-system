@@ -28,7 +28,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _loginWithGoogle() async {
     setState(() => _loadingGoogle = true);
     try {
-      await context.read<AuthProvider>().loginWithGoogle();
+      await context.read<AuthProvider>().signInWithGoogle();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
