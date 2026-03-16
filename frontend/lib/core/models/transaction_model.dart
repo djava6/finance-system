@@ -4,7 +4,9 @@ class TransactionModel {
   final double valor;
   final String tipo; // RECEITA | DESPESA
   final DateTime data;
+  final int? categoriaId;
   final String? categoria;
+  final int? contaId;
   final String? conta;
 
   TransactionModel({
@@ -13,7 +15,9 @@ class TransactionModel {
     required this.valor,
     required this.tipo,
     required this.data,
+    this.categoriaId,
     this.categoria,
+    this.contaId,
     this.conta,
   });
 
@@ -26,7 +30,9 @@ class TransactionModel {
         valor: (json['valor'] as num).toDouble(),
         tipo: json['tipo'] as String,
         data: DateTime.parse(json['data'] as String),
+        categoriaId: json['categoriaId'] as int?,
         categoria: json['categoria'] as String?,
+        contaId: json['contaId'] as int?,
         conta: json['conta'] as String?,
       );
 }
