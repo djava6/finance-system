@@ -8,15 +8,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -24,15 +21,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Testcontainers
 class AuthControllerIT {
-
-    @Container
-    @ServiceConnection
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
 
     @Autowired
     private TestRestTemplate restTemplate;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     @MockBean
     private FirebaseAuth firebaseAuth;
@@ -41,11 +36,19 @@ class AuthControllerIT {
 
     @BeforeEach
     void setUp() throws Exception {
+        cleanupUser("authtest@it.com");
+
         FirebaseToken mockToken = mock(FirebaseToken.class);
         when(mockToken.getUid()).thenReturn("test-uid-auth");
         when(mockToken.getEmail()).thenReturn("authtest@it.com");
         when(mockToken.getName()).thenReturn("Auth Test User");
         when(firebaseAuth.verifyIdToken(eq(MOCK_TOKEN))).thenReturn(mockToken);
+    }
+
+    private void cleanupUser(String email) {
+        jdbcTemplate.update("DELETE FROM transacoes WHERE usuario_id IN (SELECT id FROM usuarios WHERE email = ?)", email);
+        jdbcTemplate.update("DELETE FROM contas WHERE usuario_id IN (SELECT id FROM usuarios WHERE email = ?)", email);
+        jdbcTemplate.update("DELETE FROM usuarios WHERE email = ?", email);
     }
 
     @Test

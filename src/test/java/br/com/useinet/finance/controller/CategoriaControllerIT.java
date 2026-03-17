@@ -9,15 +9,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.util.Map;
 
@@ -27,15 +24,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Testcontainers
 class CategoriaControllerIT {
-
-    @Container
-    @ServiceConnection
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
 
     @Autowired
     private TestRestTemplate restTemplate;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     @MockBean
     private FirebaseAuth firebaseAuth;
@@ -44,6 +39,9 @@ class CategoriaControllerIT {
 
     @BeforeEach
     void setUp() throws Exception {
+        // Remove categorias criadas por testes anteriores para garantir estado limpo
+        jdbcTemplate.update("DELETE FROM categorias WHERE nome LIKE '% IT'");
+
         FirebaseToken mockToken = mock(FirebaseToken.class);
         when(mockToken.getUid()).thenReturn("uid-cat");
         when(mockToken.getEmail()).thenReturn("catuser@it.com");
