@@ -17,6 +17,6 @@ class DashboardService {
       return DashboardModel.fromJson(
           jsonDecode(response.body) as Map<String, dynamic>);
     }
-    throw Exception('Erro ao carregar dashboard');
+    throw Exception('Erro ao carregar dashboard (HTTP ${response.statusCode})');
   }
 }

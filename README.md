@@ -4,8 +4,8 @@ Sistema de controle financeiro pessoal com backend Spring Boot e frontend Flutte
 
 ## Tecnologias
 
-- **Backend**: Java 21, Spring Boot 3.3.6, Spring Security 6, JWT (JJWT 0.12.5), Flyway, PostgreSQL
-- **Frontend**: Flutter (Dart), fl_chart, provider
+- **Backend**: Java 21, Spring Boot 3.3.6, Spring Security 6, Firebase Admin SDK, Flyway, PostgreSQL
+- **Frontend**: Flutter (Dart), Firebase Auth, fl_chart, provider
 - **Infra**: Docker, GitHub Actions CI/CD, GCP Cloud Run, Secret Manager, Cloud Logging
 
 ## Pré-requisitos
@@ -26,7 +26,12 @@ Crie um arquivo `.env` na raiz (nunca versionar):
 SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/finance
 SPRING_DATASOURCE_USERNAME=postgres
 SPRING_DATASOURCE_PASSWORD=postgres
-JWT_SECRET=suachavesecretamuito longa aqui com pelo menos 256 bits
+```
+
+O backend usa Firebase Admin SDK com Application Default Credentials (ADC). Para desenvolvimento local, autentique-se com:
+
+```bash
+gcloud auth application-default login
 ```
 
 ### 2. Subir banco com Docker
@@ -63,7 +68,7 @@ flutter run
 ## Rodar tudo com Docker Compose
 
 ```bash
-JWT_SECRET=suachave docker compose up --build
+docker compose up --build
 ```
 
 ## Variáveis de ambiente
@@ -73,17 +78,14 @@ JWT_SECRET=suachave docker compose up --build
 | `SPRING_DATASOURCE_URL` | URL JDBC do PostgreSQL | Sim |
 | `SPRING_DATASOURCE_USERNAME` | Usuário do banco | Sim |
 | `SPRING_DATASOURCE_PASSWORD` | Senha do banco | Sim |
-| `JWT_SECRET` | Chave secreta JWT (Base64, mín. 256 bits) | Sim |
 | `SPRING_PROFILES_ACTIVE` | `prod` para produção | Não |
+
+Autenticação usa Firebase Admin SDK com ADC — sem secrets adicionais.
 
 ## Endpoints principais
 
 | Método | Endpoint | Descrição |
 |---|---|---|
-| POST | `/auth/register` | Registrar usuário |
-| POST | `/auth/login` | Login (retorna JWT) |
-| POST | `/auth/refresh` | Renovar access token |
-| POST | `/auth/logout` | Invalidar refresh token |
 | GET | `/transactions` | Listar transações (filtro: `?inicio=yyyy-MM-dd&fim=yyyy-MM-dd`) |
 | POST | `/transactions` | Criar transação |
 | PUT | `/transactions/{id}` | Editar transação |
@@ -102,7 +104,7 @@ Secrets necessários no GitHub:
 - `GCP_CREDENTIALS` — JSON da service account
 - `GCP_PROJECT_ID`
 - `GCP_REGION`
-- `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`
+- `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`
 
 ## Estrutura do projeto
 
@@ -110,15 +112,15 @@ Secrets necessários no GitHub:
 finance-system/
 ├── src/
 │   ├── main/java/br/com/useinet/finance/
-│   │   ├── config/          # SecurityConfig, OpenApiConfig, GlobalExceptionHandler
-│   │   ├── controller/      # AuthController, TransacaoController, DashboardController...
+│   │   ├── config/          # SecurityConfig, FirebaseConfig, OpenApiConfig, GlobalExceptionHandler
+│   │   ├── controller/      # TransacaoController, DashboardController...
 │   │   ├── dto/             # Request/Response DTOs
 │   │   ├── model/           # Entidades JPA
 │   │   ├── repository/      # Spring Data JPA repositories
-│   │   ├── security/        # JwtAuthenticationFilter
-│   │   └── service/         # Regras de negócio
+│   │   ├── security/        # FirebaseAuthenticationFilter
+│   │   └── service/         # Regras de negócio (incl. FirebaseUserService)
 │   └── resources/
-│       ├── db/migration/    # Scripts Flyway V1–V6
+│       ├── db/migration/    # Scripts Flyway V1–V11
 │       ├── application.properties
 │       ├── application-prod.properties
 │       └── logback-spring.xml

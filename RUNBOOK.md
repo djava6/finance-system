@@ -123,18 +123,18 @@ Flyway não suporta rollback automático. Para reverter:
 
 ## Rotação de secrets
 
-Secrets são armazenados no Secret Manager. Para rotacionar:
+A autenticação usa Firebase Admin SDK com Application Default Credentials (ADC) via Workload Identity no Cloud Run — não há secrets de autenticação no Secret Manager.
+
+Os únicos secrets são as credenciais do banco de dados (`DB_URL`, `DB_USERNAME`, `DB_PASSWORD`). Para rotacionar:
 
 ```bash
-# Criar nova versão do secret
-echo -n "novo-valor" | gcloud secrets versions add finance-jwt-secret --data-file=-
+# Atualizar secret de senha do banco
+echo -n "nova-senha" | gcloud secrets versions add finance-db-password --data-file=-
 
 # Reimplantar para carregar novo valor
 gcloud run services update finance-system --region=$REGION --no-traffic
 gcloud run services update-traffic finance-system --to-latest
 ```
-
-O workflow `.github/workflows/rotate-secrets.yml` faz isso automaticamente de forma agendada.
 
 ## Verificação de saúde
 

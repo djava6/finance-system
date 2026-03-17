@@ -14,6 +14,7 @@ class AuthProvider extends ChangeNotifier {
     _user = user;
     if (user != null) {
       _token = await user.getIdToken();
+      if (kDebugMode) debugPrint('--- Firebase ID Token ---\n$_token\n---');
     } else {
       _token = null;
     }
