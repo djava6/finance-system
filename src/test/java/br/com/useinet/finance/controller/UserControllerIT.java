@@ -104,15 +104,4 @@ class UserControllerIT {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 
-    @Test
-    void updateMe_shouldReturn400WhenSenhaIsTooShort() {
-        var body = Map.of("nome", "Valid Name", "senha", "123");
-
-        ResponseEntity<String> response = restTemplate.exchange(
-                "/users/me", HttpMethod.PUT,
-                new HttpEntity<>(body, authHeaders()),
-                String.class);
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-    }
 }

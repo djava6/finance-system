@@ -21,9 +21,8 @@ class UserService {
   }
 
   Future<UserProfileModel> updateProfile(
-      String token, String nome, String? senha, String? email) async {
+      String token, String nome, String? email) async {
     final body = <String, String>{'nome': nome};
-    if (senha != null && senha.isNotEmpty) body['senha'] = senha;
     if (email != null && email.isNotEmpty) body['email'] = email;
 
     final response = await http.put(

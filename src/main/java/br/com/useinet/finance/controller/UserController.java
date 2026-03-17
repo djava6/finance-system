@@ -9,7 +9,6 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -28,11 +27,9 @@ public class UserController {
             Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
 
     private final UsuarioRepository usuarioRepository;
-    private final PasswordEncoder passwordEncoder;
 
-    public UserController(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder) {
+    public UserController(UsuarioRepository usuarioRepository) {
         this.usuarioRepository = usuarioRepository;
-        this.passwordEncoder = passwordEncoder;
     }
 
     @GetMapping("/me")
@@ -58,12 +55,6 @@ public class UserController {
                 throw new IllegalArgumentException("E-mail já está em uso.");
             }
             usuario.setEmail(email);
-        }
-        if (request.getSenha() != null && !request.getSenha().isBlank()) {
-            if (request.getSenha().length() < 6) {
-                throw new IllegalArgumentException("Senha deve ter no mínimo 6 caracteres.");
-            }
-            usuario.setSenha(passwordEncoder.encode(request.getSenha()));
         }
         return ResponseEntity.ok(UserProfileResponse.from(usuarioRepository.save(usuario)));
     }

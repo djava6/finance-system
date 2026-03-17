@@ -15,13 +15,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _service = UserService();
   final _formKey = GlobalKey<FormState>();
   final _nomeController = TextEditingController();
-  final _senhaController = TextEditingController();
-  final _confirmaSenhaController = TextEditingController();
 
   UserProfileModel? _profile;
   bool _loading = true;
   bool _saving = false;
-  bool _obscureSenha = true;
 
   @override
   void initState() {
@@ -32,8 +29,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void dispose() {
     _nomeController.dispose();
-    _senhaController.dispose();
-    _confirmaSenhaController.dispose();
     super.dispose();
   }
 
@@ -60,17 +55,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     try {
       final token = context.read<AuthProvider>().token!;
-      final senha = _senhaController.text.isNotEmpty
-          ? _senhaController.text
-          : null;
       final updated = await _service.updateProfile(
-          token, _nomeController.text.trim(), senha, null);
+          token, _nomeController.text.trim(), null);
 
       // Update nome in AuthProvider
       if (mounted) {
         context.read<AuthProvider>().updateNome(updated.nome);
-        _senhaController.clear();
-        _confirmaSenhaController.clear();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Perfil atualizado com sucesso!')),
         );
@@ -126,46 +116,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       validator: (v) =>
                           v == null || v.isEmpty ? 'Informe o nome' : null,
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _senhaController,
-                      obscureText: _obscureSenha,
-                      decoration: InputDecoration(
-                        labelText: 'Nova senha (opcional)',
-                        prefixIcon: const Icon(Icons.lock_outline),
-                        border: const OutlineInputBorder(),
-                        suffixIcon: IconButton(
-                          icon: Icon(_obscureSenha
-                              ? Icons.visibility_outlined
-                              : Icons.visibility_off_outlined),
-                          onPressed: () =>
-                              setState(() => _obscureSenha = !_obscureSenha),
-                        ),
-                      ),
-                      validator: (v) {
-                        if (v != null && v.isNotEmpty && v.length < 6) {
-                          return 'Senha deve ter no mínimo 6 caracteres';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _confirmaSenhaController,
-                      obscureText: _obscureSenha,
-                      decoration: const InputDecoration(
-                        labelText: 'Confirmar nova senha',
-                        prefixIcon: Icon(Icons.lock_outline),
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: (v) {
-                        if (_senhaController.text.isNotEmpty &&
-                            v != _senhaController.text) {
-                          return 'As senhas não coincidem';
-                        }
-                        return null;
-                      },
                     ),
                     const SizedBox(height: 32),
                     FilledButton.icon(

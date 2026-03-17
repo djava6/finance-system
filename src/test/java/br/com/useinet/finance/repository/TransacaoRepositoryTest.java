@@ -41,7 +41,6 @@ class TransacaoRepositoryTest {
         Usuario u = new Usuario();
         u.setNome("Repo Test");
         u.setEmail("repotest_" + System.nanoTime() + "@test.com");
-        u.setSenha("hashedpwd");
         usuario = usuarioRepository.save(u);
     }
 
@@ -96,7 +95,6 @@ class TransacaoRepositoryTest {
         Usuario outro = new Usuario();
         outro.setNome("Outro");
         outro.setEmail("outro_" + System.nanoTime() + "@test.com");
-        outro.setSenha("pwd");
         outro = usuarioRepository.save(outro);
 
         Transacao t = salvar("Minha", 100.0, TipoTransacao.RECEITA);

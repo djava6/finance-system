@@ -26,9 +26,6 @@ public class Usuario implements UserDetails {
     private String email;
 
     @Column(nullable = true)
-    private String senha;
-
-    @Column(nullable = true)
     private String provider;
 
     @Column(name = "provider_id", nullable = true)
@@ -41,7 +38,7 @@ public class Usuario implements UserDetails {
 
     @Override
     public String getPassword() {
-        return senha;
+        return null;
     }
 
     @Override
@@ -71,14 +68,6 @@ public class Usuario implements UserDetails {
 
     public void setEmail(String email) {
         this.email = email;
-    }
-
-    public String getSenha() {
-        return senha;
-    }
-
-    public void setSenha(String senha) {
-        this.senha = senha;
     }
 
     public String getProvider() {
