@@ -41,7 +41,6 @@ class ContaRepositoryTest {
         Usuario u = new Usuario();
         u.setNome("Test");
         u.setEmail(email);
-        u.setSenha("pwd");
         return usuarioRepository.save(u);
     }
 

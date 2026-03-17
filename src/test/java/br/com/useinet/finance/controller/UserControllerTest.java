@@ -12,7 +12,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
 
@@ -27,9 +26,6 @@ class UserControllerTest {
     @Mock
     private UsuarioRepository usuarioRepository;
 
-    @Mock
-    private PasswordEncoder passwordEncoder;
-
     @InjectMocks
     private UserController userController;
 
@@ -41,7 +37,6 @@ class UserControllerTest {
         usuario.setId(1L);
         usuario.setNome("Carlos");
         usuario.setEmail("carlos@example.com");
-        usuario.setSenha("encodedPassword");
     }
 
     // --- GET /users/me ---
@@ -197,45 +192,5 @@ class UserControllerTest {
 
         assertThat(usuario.getEmail()).isEqualTo("carlos@example.com");
         verify(usuarioRepository, never()).findByEmail(any());
-    }
-
-    // --- PUT /users/me — senha ---
-
-    @Test
-    void atualizar_shouldUpdateSenhaWhenValid() {
-        UpdateProfileRequest request = new UpdateProfileRequest();
-        request.setNome("Carlos");
-        request.setSenha("novaSenha123");
-        when(passwordEncoder.encode("novaSenha123")).thenReturn("encodedNovaSenha");
-        when(usuarioRepository.save(usuario)).thenReturn(usuario);
-
-        userController.atualizar(usuario, request);
-
-        assertThat(usuario.getSenha()).isEqualTo("encodedNovaSenha");
-        verify(passwordEncoder).encode("novaSenha123");
-    }
-
-    @Test
-    void atualizar_shouldThrowWhenSenhaIsTooShort() {
-        UpdateProfileRequest request = new UpdateProfileRequest();
-        request.setNome("Carlos");
-        request.setSenha("123");
-
-        assertThatThrownBy(() -> userController.atualizar(usuario, request))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Senha deve ter no mínimo 6 caracteres.");
-    }
-
-    @Test
-    void atualizar_shouldSkipSenhaUpdateWhenSenhaIsNull() {
-        UpdateProfileRequest request = new UpdateProfileRequest();
-        request.setNome("Carlos");
-        request.setSenha(null);
-        when(usuarioRepository.save(usuario)).thenReturn(usuario);
-
-        userController.atualizar(usuario, request);
-
-        verify(passwordEncoder, never()).encode(any());
-        assertThat(usuario.getSenha()).isEqualTo("encodedPassword");
     }
 }
