@@ -1,0 +1,69 @@
+package br.com.useinet.finance.repository
+
+import br.com.useinet.finance.model.Conta
+import br.com.useinet.finance.model.Usuario
+import com.google.firebase.auth.FirebaseAuth
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.test.mock.mockito.MockBean
+import org.springframework.transaction.annotation.Transactional
+
+@SpringBootTest
+@Transactional
+class ContaRepositoryTest {
+
+    @MockBean lateinit var firebaseAuth: FirebaseAuth
+    @Autowired lateinit var contaRepository: ContaRepository
+    @Autowired lateinit var usuarioRepository: UsuarioRepository
+
+    private lateinit var usuario1: Usuario
+    private lateinit var usuario2: Usuario
+
+    @BeforeEach
+    fun setUp() {
+        usuario1 = salvarUsuario("user1_${System.nanoTime()}@conta.com")
+        usuario2 = salvarUsuario("user2_${System.nanoTime()}@conta.com")
+    }
+
+    private fun salvarUsuario(email: String): Usuario {
+        return usuarioRepository.save(Usuario().apply { nome = "Test"; this.email = email })
+    }
+
+    private fun salvarConta(nome: String, saldo: Double, dono: Usuario): Conta {
+        return contaRepository.save(Conta().apply { this.nome = nome; this.saldo = saldo; usuario = dono })
+    }
+
+    @Test
+    fun findByUsuario_shouldReturnOnlyOwnerContas() {
+        salvarConta("Nubank", 1000.0, usuario1)
+        salvarConta("Inter", 500.0, usuario1)
+        salvarConta("BB", 200.0, usuario2)
+
+        val result = contaRepository.findByUsuario(usuario1)
+        assertThat(result).hasSize(2)
+        assertThat(result).extracting<String> { it.nome!! }.containsExactlyInAnyOrder("Nubank", "Inter")
+    }
+
+    @Test
+    fun findByUsuario_shouldReturnEmptyWhenNoContas() {
+        assertThat(contaRepository.findByUsuario(usuario1)).isEmpty()
+    }
+
+    @Test
+    fun findByIdAndUsuario_shouldReturnContaWhenOwnerMatches() {
+        val conta = salvarConta("Poupança", 3000.0, usuario1)
+        val result = contaRepository.findByIdAndUsuario(conta.id!!, usuario1)
+        assertThat(result).isPresent
+        assertThat(result.get().nome).isEqualTo("Poupança")
+        assertThat(result.get().saldo).isEqualTo(3000.0)
+    }
+
+    @Test
+    fun findByIdAndUsuario_shouldReturnEmptyWhenOwnerDiffers() {
+        val conta = salvarConta("Secreta", 9999.0, usuario1)
+        assertThat(contaRepository.findByIdAndUsuario(conta.id!!, usuario2)).isEmpty()
+    }
+}

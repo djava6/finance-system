@@ -1,14 +1,18 @@
 # Stage 1: build
-FROM maven:3.9-eclipse-temurin-21 AS build
+FROM eclipse-temurin:21-jdk-jammy AS build
 WORKDIR /app
 
-# Baixa dependências primeiro (cache layer)
-COPY pom.xml .
-RUN mvn dependency:go-offline -B
+# Copia o wrapper e os arquivos de configuração do Gradle primeiro (cache layer)
+COPY gradlew gradlew.bat ./
+COPY gradle ./gradle
+COPY build.gradle.kts settings.gradle.kts ./
+
+# Baixa dependências
+RUN ./gradlew dependencies --no-daemon -q
 
 # Compila o projeto
 COPY src ./src
-RUN mvn package -DskipTests -B
+RUN ./gradlew bootJar -x test --no-daemon
 
 # Stage 2: runtime
 FROM eclipse-temurin:21-jre-jammy
@@ -17,7 +21,7 @@ WORKDIR /app
 RUN groupadd -r spring && useradd -r -g spring spring
 USER spring
 
-COPY --from=build /app/target/*.jar app.jar
+COPY --from=build /app/build/libs/*.jar app.jar
 
 EXPOSE 8080
 
