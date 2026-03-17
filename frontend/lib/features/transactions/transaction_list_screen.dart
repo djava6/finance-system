@@ -79,13 +79,10 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
     try {
       final token = context.read<AuthProvider>().token!;
       final bytes = await _service.exportarCsv(token);
-      final path = await saveFile(bytes, 'transacoes.csv');
+      await saveFile(bytes, 'transacoes.csv');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('CSV salvo em $path'),
-            action: SnackBarAction(label: 'OK', onPressed: () {}),
-          ),
+          const SnackBar(content: Text('CSV exportado com sucesso')),
         );
       }
     } catch (e) {
