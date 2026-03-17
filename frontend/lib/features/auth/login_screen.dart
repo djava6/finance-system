@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/providers/auth_provider.dart';
@@ -10,10 +12,11 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  bool _loading = false;
+  bool _loadingGoogle = false;
+  bool _loadingApple = false;
 
   Future<void> _loginWithGoogle() async {
-    setState(() => _loading = true);
+    setState(() => _loadingGoogle = true);
     try {
       await context.read<AuthProvider>().signInWithGoogle();
     } catch (e) {
@@ -23,12 +26,32 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) setState(() => _loadingGoogle = false);
     }
   }
 
+  Future<void> _loginWithApple() async {
+    setState(() => _loadingApple = true);
+    try {
+      await context.read<AuthProvider>().signInWithApple();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _loadingApple = false);
+    }
+  }
+
+  bool get _showApple =>
+      kIsWeb || Platform.isIOS || Platform.isMacOS;
+
   @override
   Widget build(BuildContext context) {
+    final loading = _loadingGoogle || _loadingApple;
+
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -36,6 +59,7 @@ class _LoginScreenState extends State<LoginScreen> {
             padding: const EdgeInsets.all(24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const Icon(Icons.account_balance_wallet,
                     size: 72, color: Colors.green),
@@ -52,8 +76,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     textAlign: TextAlign.center),
                 const SizedBox(height: 48),
                 FilledButton.icon(
-                  onPressed: _loading ? null : _loginWithGoogle,
-                  icon: _loading
+                  onPressed: loading ? null : _loginWithGoogle,
+                  icon: _loadingGoogle
                       ? const SizedBox(
                           height: 18,
                           width: 18,
@@ -61,6 +85,24 @@ class _LoginScreenState extends State<LoginScreen> {
                       : const Icon(Icons.login),
                   label: const Text('Entrar com Google'),
                 ),
+                if (_showApple) ...[
+                  const SizedBox(height: 12),
+                  FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.black,
+                      foregroundColor: Colors.white,
+                    ),
+                    onPressed: loading ? null : _loginWithApple,
+                    icon: _loadingApple
+                        ? const SizedBox(
+                            height: 18,
+                            width: 18,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white))
+                        : const Icon(Icons.apple),
+                    label: const Text('Entrar com Apple'),
+                  ),
+                ],
               ],
             ),
           ),
