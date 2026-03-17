@@ -45,8 +45,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  bool get _showApple =>
-      kIsWeb || Platform.isIOS || Platform.isMacOS;
+  bool get _showApple => !kIsWeb && (Platform.isIOS || Platform.isMacOS);
 
   @override
   Widget build(BuildContext context) {

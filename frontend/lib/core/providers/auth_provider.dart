@@ -63,11 +63,6 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> signInWithApple() async {
-    if (kIsWeb) {
-      await FirebaseAuth.instance.signInWithPopup(OAuthProvider('apple.com'));
-      return;
-    }
-
     final rawNonce = _generateNonce();
     final nonce = _sha256ofString(rawNonce);
 
