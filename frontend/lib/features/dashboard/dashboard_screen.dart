@@ -10,6 +10,8 @@ import '../categories/category_list_screen.dart';
 import '../profile/profile_screen.dart';
 import '../transactions/transaction_list_screen.dart';
 
+// ── Navigation shell ──────────────────────────────────────────────────────────
+
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
@@ -18,10 +20,66 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
+  int _selectedIndex = 0;
+
+  static const _tabs = [
+    _HomeTab(),
+    TransactionListScreen(),
+    CategoryListScreen(),
+    ProfileScreen(),
+    AccountListScreen(),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: _tabs,
+      ),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _selectedIndex,
+        onDestinationSelected: (i) => setState(() => _selectedIndex = i),
+        destinations: const [
+          NavigationDestination(
+              icon: Icon(Icons.home_outlined),
+              selectedIcon: Icon(Icons.home),
+              label: 'Início'),
+          NavigationDestination(
+              icon: Icon(Icons.list_alt_outlined),
+              selectedIcon: Icon(Icons.list_alt),
+              label: 'Transações'),
+          NavigationDestination(
+              icon: Icon(Icons.label_outlined),
+              selectedIcon: Icon(Icons.label),
+              label: 'Categorias'),
+          NavigationDestination(
+              icon: Icon(Icons.person_outline),
+              selectedIcon: Icon(Icons.person),
+              label: 'Perfil'),
+          NavigationDestination(
+              icon: Icon(Icons.account_balance_outlined),
+              selectedIcon: Icon(Icons.account_balance),
+              label: 'Contas'),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Home tab (dashboard content) ─────────────────────────────────────────────
+
+class _HomeTab extends StatefulWidget {
+  const _HomeTab();
+
+  @override
+  State<_HomeTab> createState() => _HomeTabState();
+}
+
+class _HomeTabState extends State<_HomeTab> {
   final _service = DashboardService();
   DashboardModel? _data;
   bool _loading = true;
-  int _selectedTab = 0;
 
   final _currency = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
   final _dateFormat = DateFormat('dd/MM');
@@ -70,6 +128,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
+            tooltip: 'Sair',
             onPressed: () => context.read<AuthProvider>().logout(),
           ),
         ],
@@ -77,63 +136,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _data == null
-              ? const Center(child: Text('Erro ao carregar dados.'))
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text('Erro ao carregar dados.'),
+                      const SizedBox(height: 12),
+                      FilledButton.tonal(
+                        onPressed: _load,
+                        child: const Text('Tentar novamente'),
+                      ),
+                    ],
+                  ),
+                )
               : RefreshIndicator(
                   onRefresh: _load,
                   child: _buildContent(),
                 ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedTab,
-        onDestinationSelected: (i) {
-          if (i == 1) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (_) => const TransactionListScreen()),
-            ).then((_) => _load());
-          } else if (i == 2) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (_) => const CategoryListScreen()),
-            );
-          } else if (i == 3) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const ProfileScreen()),
-            );
-          } else if (i == 4) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const AccountListScreen()),
-            );
-          } else {
-            setState(() => _selectedTab = i);
-          }
-        },
-        destinations: const [
-          NavigationDestination(
-              icon: Icon(Icons.dashboard_outlined),
-              selectedIcon: Icon(Icons.dashboard),
-              label: 'Dashboard'),
-          NavigationDestination(
-              icon: Icon(Icons.list_alt_outlined),
-              selectedIcon: Icon(Icons.list_alt),
-              label: 'Transações'),
-          NavigationDestination(
-              icon: Icon(Icons.label_outlined),
-              selectedIcon: Icon(Icons.label),
-              label: 'Categorias'),
-          NavigationDestination(
-              icon: Icon(Icons.person_outline),
-              selectedIcon: Icon(Icons.person),
-              label: 'Perfil'),
-          NavigationDestination(
-              icon: Icon(Icons.account_balance_outlined),
-              selectedIcon: Icon(Icons.account_balance),
-              label: 'Contas'),
-        ],
-      ),
     );
   }
 
@@ -322,6 +341,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 }
 
+// ── Shared display widgets ────────────────────────────────────────────────────
+
 class _LegendDot extends StatelessWidget {
   final Color color;
   final String label;
@@ -405,8 +426,7 @@ class _InfoColumn extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(label,
-            style: TextStyle(color: color, fontSize: 13)),
+        Text(label, style: TextStyle(color: color, fontSize: 13)),
         const SizedBox(height: 4),
         Text(value,
             style: TextStyle(
