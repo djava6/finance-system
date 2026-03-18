@@ -1,0 +1,105 @@
+name: Atualizar Roadmap (#78)
+
+on:
+  issues:
+    types: [closed]
+  projects_v2_item:
+    types: [edited]
+
+permissions:
+  issues: write
+  repository-projects: read
+
+jobs:
+  marcar-concluido:
+    name: Marcar concluído no roadmap
+    runs-on: ubuntu-latest
+    if: github.event_name == 'issues'
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const issueNum = context.payload.issue.number;
+            if (issueNum === 78) return;
+
+            const { data: roadmap } = await github.rest.issues.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: 78
+            });
+
+            let body = roadmap.body;
+            // Marca como concluído (com ou sem 🔄 de em progresso)
+            const pattern = new RegExp(`- \\[ \\] (🔄 )?#${issueNum}\\b`);
+            if (!pattern.test(body)) return;
+
+            body = body.replace(pattern, `- [x] #${issueNum}`);
+
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: 78,
+              body
+            });
+
+            console.log(`✅ #${issueNum} marcada como concluída no roadmap`);
+
+  marcar-em-progresso:
+    name: Marcar em progresso no roadmap
+    runs-on: ubuntu-latest
+    if: github.event_name == 'projects_v2_item' && github.event.projects_v2_item.content_type == 'Issue'
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const nodeId = context.payload.projects_v2_item.node_id;
+
+            // Buscar issue number e status atual via GraphQL
+            const result = await github.graphql(`
+              query($nodeId: ID!) {
+                node(id: $nodeId) {
+                  ... on ProjectV2Item {
+                    content { ... on Issue { number } }
+                    fieldValues(first: 10) {
+                      nodes {
+                        ... on ProjectV2ItemFieldSingleSelectValue {
+                          name
+                          field { ... on ProjectV2SingleSelectField { name } }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            `, { nodeId });
+
+            const issueNum = result.node?.content?.number;
+            if (!issueNum || issueNum === 78) return;
+
+            const status = result.node.fieldValues.nodes
+              .find(f => f.field?.name === 'Status')?.name;
+
+            if (status !== 'In Progress') return;
+
+            const { data: roadmap } = await github.rest.issues.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: 78
+            });
+
+            let body = roadmap.body;
+            const pattern = new RegExp(`- \\[ \\] #${issueNum}\\b`);
+            if (!pattern.test(body)) return;
+
+            body = body.replace(pattern, `- [ ] 🔄 #${issueNum}`);
+
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: 78,
+              body
+            });
+
+            console.log(`🔄 #${issueNum} marcada como em progresso no roadmap`);
