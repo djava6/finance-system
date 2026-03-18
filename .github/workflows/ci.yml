@@ -108,7 +108,7 @@ jobs:
             --allow-unauthenticated \
             --set-env-vars "SPRING_PROFILES_ACTIVE=prod,SENTRY_DSN=${{ secrets.SENTRY_DSN }}" \
             --service-account "finance-system-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com" \
-            --min-instances 1 \
+            --min-instances 0 \
             --memory 1Gi \
             --use-http2 \
             --project ${{ secrets.GCP_PROJECT_ID }}
