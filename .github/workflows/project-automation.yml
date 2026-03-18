@@ -1,0 +1,89 @@
+name: Project Board Automation
+
+on:
+  pull_request:
+    types: [opened, reopened]
+  issues:
+    types: [closed]
+  pull_request_target:
+    types: [closed]
+
+jobs:
+  move-to-in-progress:
+    name: PR aberto → In Progress
+    if: github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'reopened')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Move linked issues to In Progress
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.PROJECT_TOKEN }}
+          script: |
+            const projectId = "PVT_kwHOA_6eE84BSEzd";
+            const statusFieldId = "PVTSSF_lAHOA_6eE84BSEzdzg_ty9E";
+            const inProgressId = "47fc9ee4";
+
+            const body = context.payload.pull_request.body || "";
+            const closes = [...body.matchAll(/(?:closes|fixes|resolves)\s+#(\d+)/gi)]
+              .map(m => parseInt(m[1]));
+
+            for (const issueNumber of closes) {
+              const { repository: { issue } } = await github.graphql(`
+                query($owner: String!, $repo: String!, $number: Int!) {
+                  repository(owner: $owner, name: $repo) {
+                    issue(number: $number) {
+                      projectItems(first: 5) {
+                        nodes { id }
+                      }
+                    }
+                  }
+                }`, { owner: context.repo.owner, repo: context.repo.repo, number: issueNumber });
+
+              for (const item of issue.projectItems.nodes) {
+                await github.graphql(`
+                  mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
+                    updateProjectV2ItemFieldValue(input: {
+                      projectId: $projectId, itemId: $itemId,
+                      fieldId: $fieldId, value: { singleSelectOptionId: $optionId }
+                    }) { projectV2Item { id } }
+                  }`, { projectId, itemId: item.id, fieldId: statusFieldId, optionId: inProgressId });
+              }
+            }
+
+  move-to-done:
+    name: Issue/PR fechado → Done
+    if: github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Move item to Done
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.PROJECT_TOKEN }}
+          script: |
+            const projectId = "PVT_kwHOA_6eE84BSEzd";
+            const statusFieldId = "PVTSSF_lAHOA_6eE84BSEzdzg_ty9E";
+            const doneId = "98236657";
+
+            const number = context.payload.issue?.number ?? context.payload.pull_request?.number;
+            const type = context.payload.issue ? "issue" : "pullRequest";
+
+            const { repository: { item } } = await github.graphql(`
+              query($owner: String!, $repo: String!, $number: Int!) {
+                repository(owner: $owner, name: $repo) {
+                  item: ${type}(number: $number) {
+                    projectItems(first: 5) {
+                      nodes { id }
+                    }
+                  }
+                }
+              }`, { owner: context.repo.owner, repo: context.repo.repo, number });
+
+            for (const node of item.projectItems.nodes) {
+              await github.graphql(`
+                mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
+                  updateProjectV2ItemFieldValue(input: {
+                    projectId: $projectId, itemId: $itemId,
+                    fieldId: $fieldId, value: { singleSelectOptionId: $optionId }
+                  }) { projectV2Item { id } }
+                }`, { projectId, itemId: node.id, fieldId: statusFieldId, optionId: doneId });
+            }
