@@ -110,5 +110,6 @@ jobs:
             --service-account "finance-system-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com" \
             --min-instances 1 \
             --memory 1Gi \
+            --use-http2 \
             --project ${{ secrets.GCP_PROJECT_ID }}
 
