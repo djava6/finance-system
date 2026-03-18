@@ -65,9 +65,15 @@ class TransacaoController(private val transacaoService: TransacaoService) {
     }
 
     @GetMapping("/export/csv")
-    @Operation(summary = "Exportar CSV", description = "Baixa todas as transações do usuário em formato CSV")
-    fun exportarCsv(@AuthenticationPrincipal usuario: Usuario): ResponseEntity<ByteArray> {
-        val csv = transacaoService.exportarCsv(usuario)
+    @Operation(summary = "Exportar CSV", description = "Baixa transações do usuário em CSV. Filtro opcional por período (inicio/fim no formato yyyy-MM-dd). Inclui resumo financeiro no topo.")
+    fun exportarCsv(
+        @AuthenticationPrincipal usuario: Usuario,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) inicio: LocalDate?,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) fim: LocalDate?
+    ): ResponseEntity<ByteArray> {
+        val dtInicio = inicio?.atStartOfDay()
+        val dtFim = fim?.atTime(23, 59, 59)
+        val csv = transacaoService.exportarCsv(usuario, dtInicio, dtFim)
         return ResponseEntity.ok()
             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"transacoes.csv\"")
             .contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))

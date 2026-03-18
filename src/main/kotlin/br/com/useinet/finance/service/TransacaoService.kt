@@ -124,20 +124,47 @@ class TransacaoService(
         conta.saldo = if (tipo == TipoTransacao.RECEITA) saldo - valor else saldo + valor
     }
 
-    fun exportarCsv(usuario: Usuario): ByteArray {
-        val fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
+    @Transactional(readOnly = true)
+    fun exportarCsv(usuario: Usuario, inicio: LocalDateTime?, fim: LocalDateTime?): ByteArray {
+        val fmtDateTime = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
+        val fmtDate = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+
+        val transacoes = if (inicio != null && fim != null)
+            transacaoRepository.findByUsuarioAndDataBetweenOrderByDataDesc(usuario, inicio, fim)
+        else
+            transacaoRepository.findByUsuarioOrderByDataDesc(usuario)
+
+        val totalReceitas = transacoes.filter { it.tipo == TipoTransacao.RECEITA }.sumOf { it.valor ?: 0.0 }
+        val totalDespesas = transacoes.filter { it.tipo == TipoTransacao.DESPESA }.sumOf { it.valor ?: 0.0 }
+        val saldo = totalReceitas - totalDespesas
+        val periodo = if (inicio != null && fim != null)
+            "${inicio.format(fmtDate)} a ${fim.format(fmtDate)}"
+        else "Todas as transações"
+
         val csv = StringBuilder()
         csv.append('\uFEFF') // BOM para compatibilidade com Excel
-        csv.append("ID,Descrição,Valor,Tipo,Data,Categoria,Conta\n")
 
-        transacaoRepository.findByUsuarioOrderByDataDesc(usuario).forEach { t ->
+        // Resumo
+        csv.append("Período:,${escapeCsv(periodo)}\n")
+        csv.append("Total Receitas:,\"${"%.2f".format(totalReceitas)}\"\n")
+        csv.append("Total Despesas:,\"${"%.2f".format(totalDespesas)}\"\n")
+        csv.append("Saldo:,\"${"%.2f".format(saldo)}\"\n")
+        csv.append("\n")
+
+        // Cabeçalho
+        csv.append("ID,Descrição,Valor,Tipo,Data,Categoria,Conta,Saldo da Conta\n")
+
+        // Linhas
+        transacoes.forEach { t ->
+            val tipoLegivel = if (t.tipo == TipoTransacao.RECEITA) "Receita" else "Despesa"
             csv.append(t.id).append(',')
                 .append(escapeCsv(t.descricao)).append(',')
-                .append(t.valor).append(',')
-                .append(t.tipo).append(',')
-                .append(requireNotNull(t.data).format(fmt)).append(',')
+                .append("%.2f".format(t.valor ?: 0.0)).append(',')
+                .append(tipoLegivel).append(',')
+                .append(requireNotNull(t.data).format(fmtDateTime)).append(',')
                 .append(t.categoria?.let { escapeCsv(it.nome) } ?: "").append(',')
-                .append(t.conta?.let { escapeCsv(it.nome) } ?: "")
+                .append(t.conta?.let { escapeCsv(it.nome) } ?: "").append(',')
+                .append(t.conta?.saldo?.let { "%.2f".format(it) } ?: "")
                 .append('\n')
         }
 
