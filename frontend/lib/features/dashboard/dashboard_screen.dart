@@ -106,8 +106,7 @@ class _HomeTabState extends State<_HomeTab> {
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
-      final token = context.read<AuthProvider>().token!;
-      _data = await _service.getDashboard(token);
+      _data = await _service.getDashboard();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

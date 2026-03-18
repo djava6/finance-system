@@ -4,9 +4,10 @@ import '../models/categoria_model.dart';
 import 'api_client.dart';
 
 class CategoriaService {
-  Future<List<CategoriaModel>> listar(String token) async {
-    final client = ApiClient(token);
-    final response = await client.get(Uri.parse(ApiConstants.categories));
+  final _client = ApiClient();
+
+  Future<List<CategoriaModel>> listar() async {
+    final response = await _client.get(Uri.parse(ApiConstants.categories));
     if (response.statusCode == 200) {
       final list = jsonDecode(response.body) as List;
       return list.map((e) => CategoriaModel.fromJson(e)).toList();
@@ -14,9 +15,8 @@ class CategoriaService {
     throw Exception('Erro ao carregar categorias');
   }
 
-  Future<CategoriaModel> criar(String token, String nome) async {
-    final client = ApiClient(token);
-    final response = await client.post(
+  Future<CategoriaModel> criar(String nome) async {
+    final response = await _client.post(
       Uri.parse(ApiConstants.categories),
       body: jsonEncode({'nome': nome}),
     );
@@ -26,9 +26,8 @@ class CategoriaService {
     throw Exception(_extractError(response.body));
   }
 
-  Future<CategoriaModel> renomear(String token, int id, String nome) async {
-    final client = ApiClient(token);
-    final response = await client.put(
+  Future<CategoriaModel> renomear(int id, String nome) async {
+    final response = await _client.put(
       Uri.parse('${ApiConstants.categories}/$id'),
       body: jsonEncode({'nome': nome}),
     );
@@ -38,10 +37,9 @@ class CategoriaService {
     throw Exception(_extractError(response.body));
   }
 
-  Future<void> deletar(String token, int id) async {
-    final client = ApiClient(token);
+  Future<void> deletar(int id) async {
     final response =
-        await client.delete(Uri.parse('${ApiConstants.categories}/$id'));
+        await _client.delete(Uri.parse('${ApiConstants.categories}/$id'));
     if (response.statusCode != 204) {
       throw Exception(_extractError(response.body));
     }

@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../../core/models/categoria_model.dart';
 import '../../core/models/conta_model.dart';
 import '../../core/models/transaction_model.dart';
-import '../../core/providers/auth_provider.dart';
 import '../../core/services/categoria_service.dart';
 import '../../core/services/conta_service.dart';
 import '../../core/services/transaction_service.dart';
@@ -45,10 +43,9 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
 
   Future<void> _loadData() async {
     try {
-      final token = context.read<AuthProvider>().token!;
       final results = await Future.wait([
-        _categoriaService.listar(token),
-        _contaService.listar(token),
+        _categoriaService.listar(),
+        _contaService.listar(),
       ]);
       if (mounted) {
         setState(() {
@@ -72,10 +69,8 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _loading = true);
 
-    final token = context.read<AuthProvider>().token!;
     try {
       await _service.atualizar(
-        token: token,
         id: widget.transaction.id,
         descricao: _descricaoController.text.trim(),
         valor: double.parse(_valorController.text.replaceAll(',', '.')),

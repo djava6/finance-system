@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 import '../../core/models/conta_model.dart';
-import '../../core/providers/auth_provider.dart';
 import '../../core/services/conta_service.dart';
 
 class AccountListScreen extends StatefulWidget {
@@ -28,8 +26,7 @@ class _AccountListScreenState extends State<AccountListScreen> {
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
-      final token = context.read<AuthProvider>().token!;
-      _contas = await _service.listar(token);
+      _contas = await _service.listar();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -102,15 +99,14 @@ class _AccountListScreenState extends State<AccountListScreen> {
     );
 
     if (confirmed == true) {
-      final token = context.read<AuthProvider>().token!;
       final nome = nomeController.text.trim();
       final saldo =
           double.parse(saldoController.text.replaceAll(',', '.'));
       try {
         if (conta == null) {
-          await _service.criar(token, nome, saldo);
+          await _service.criar(nome, saldo);
         } else {
-          await _service.atualizar(token, conta.id, nome, saldo);
+          await _service.atualizar(conta.id, nome, saldo);
         }
         await _load();
       } catch (e) {
@@ -144,8 +140,7 @@ class _AccountListScreenState extends State<AccountListScreen> {
     );
     if (confirmed == true) {
       try {
-        final token = context.read<AuthProvider>().token!;
-        await _service.deletar(token, conta.id);
+        await _service.deletar(conta.id);
         await _load();
       } catch (e) {
         if (mounted) {

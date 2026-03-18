@@ -1,33 +1,25 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
 import '../constants/api_constants.dart';
 import '../models/user_profile_model.dart';
+import 'api_client.dart';
 
 class UserService {
-  Map<String, String> _headers(String token) => {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      };
+  final _client = ApiClient();
 
-  Future<UserProfileModel> getProfile(String token) async {
-    final response = await http.get(
-      Uri.parse(ApiConstants.userMe),
-      headers: _headers(token),
-    );
+  Future<UserProfileModel> getProfile() async {
+    final response = await _client.get(Uri.parse(ApiConstants.userMe));
     if (response.statusCode == 200) {
       return UserProfileModel.fromJson(jsonDecode(response.body));
     }
     throw Exception('Erro ao carregar perfil');
   }
 
-  Future<UserProfileModel> updateProfile(
-      String token, String nome, String? email) async {
+  Future<UserProfileModel> updateProfile(String nome, String? email) async {
     final body = <String, String>{'nome': nome};
     if (email != null && email.isNotEmpty) body['email'] = email;
 
-    final response = await http.put(
+    final response = await _client.put(
       Uri.parse(ApiConstants.userMe),
-      headers: _headers(token),
       body: jsonEncode(body),
     );
     if (response.statusCode == 200) {

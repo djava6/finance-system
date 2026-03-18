@@ -35,8 +35,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
-      final token = context.read<AuthProvider>().token!;
-      _profile = await _service.getProfile(token);
+      _profile = await _service.getProfile();
       _nomeController.text = _profile!.nome;
     } catch (e) {
       if (mounted) {
@@ -54,9 +53,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() => _saving = true);
 
     try {
-      final token = context.read<AuthProvider>().token!;
-      final updated = await _service.updateProfile(
-          token, _nomeController.text.trim(), null);
+      final updated =
+          await _service.updateProfile(_nomeController.text.trim(), null);
 
       // Update nome in AuthProvider
       if (mounted) {

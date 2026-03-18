@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../../core/models/categoria_model.dart';
-import '../../core/providers/auth_provider.dart';
 import '../../core/services/categoria_service.dart';
 
 class CategoryListScreen extends StatefulWidget {
@@ -25,8 +23,7 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
-      final token = context.read<AuthProvider>().token!;
-      _categories = await _service.listar(token);
+      _categories = await _service.listar();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -68,8 +65,7 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
 
     if (confirmed == true && controller.text.trim().isNotEmpty) {
       try {
-        final token = context.read<AuthProvider>().token!;
-        await _service.criar(token, controller.text.trim());
+        await _service.criar(controller.text.trim());
         await _load();
       } catch (e) {
         if (mounted) {
@@ -114,8 +110,7 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
     if (confirmed == true && controller.text.trim().isNotEmpty &&
         controller.text.trim() != categoria.nome) {
       try {
-        final token = context.read<AuthProvider>().token!;
-        await _service.renomear(token, categoria.id, controller.text.trim());
+        await _service.renomear(categoria.id, controller.text.trim());
         await _load();
       } catch (e) {
         if (mounted) {
@@ -150,8 +145,7 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
 
     if (confirmed == true) {
       try {
-        final token = context.read<AuthProvider>().token!;
-        await _service.deletar(token, categoria.id);
+        await _service.deletar(categoria.id);
         await _load();
       } catch (e) {
         if (mounted) {

@@ -1,10 +1,8 @@
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 import '../../core/utils/file_saver.dart';
 import '../../core/models/transaction_model.dart';
-import '../../core/providers/auth_provider.dart';
 import '../../core/services/transaction_service.dart';
 import 'add_transaction_screen.dart';
 import 'edit_transaction_screen.dart';
@@ -36,8 +34,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
-      final token = context.read<AuthProvider>().token!;
-      _transactions = await _service.listar(token,
+      _transactions = await _service.listar(
           inicio: _filterInicio, fim: _filterFim);
     } catch (e) {
       if (mounted) {
@@ -79,8 +76,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
 
   Future<void> _exportarCsv() async {
     try {
-      final token = context.read<AuthProvider>().token!;
-      final bytes = await _service.exportarCsv(token);
+      final bytes = await _service.exportarCsv();
       await saveFile(bytes, 'transacoes.csv');
       await FirebaseAnalytics.instance.logEvent(name: 'exportar_csv');
       if (mounted) {
@@ -115,8 +111,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
       ),
     );
     if (confirmed == true) {
-      final token = context.read<AuthProvider>().token!;
-      await _service.deletar(token, t.id);
+      await _service.deletar(t.id);
       _load();
     }
   }
