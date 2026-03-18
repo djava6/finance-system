@@ -1,19 +1,12 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
 import '../constants/api_constants.dart';
 import '../models/categoria_model.dart';
+import 'api_client.dart';
 
 class CategoriaService {
-  Map<String, String> _headers(String token) => {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      };
-
   Future<List<CategoriaModel>> listar(String token) async {
-    final response = await http.get(
-      Uri.parse(ApiConstants.categories),
-      headers: _headers(token),
-    );
+    final client = ApiClient(token);
+    final response = await client.get(Uri.parse(ApiConstants.categories));
     if (response.statusCode == 200) {
       final list = jsonDecode(response.body) as List;
       return list.map((e) => CategoriaModel.fromJson(e)).toList();
@@ -22,9 +15,9 @@ class CategoriaService {
   }
 
   Future<CategoriaModel> criar(String token, String nome) async {
-    final response = await http.post(
+    final client = ApiClient(token);
+    final response = await client.post(
       Uri.parse(ApiConstants.categories),
-      headers: _headers(token),
       body: jsonEncode({'nome': nome}),
     );
     if (response.statusCode == 201) {
@@ -34,9 +27,9 @@ class CategoriaService {
   }
 
   Future<CategoriaModel> renomear(String token, int id, String nome) async {
-    final response = await http.put(
+    final client = ApiClient(token);
+    final response = await client.put(
       Uri.parse('${ApiConstants.categories}/$id'),
-      headers: _headers(token),
       body: jsonEncode({'nome': nome}),
     );
     if (response.statusCode == 200) {
@@ -46,10 +39,9 @@ class CategoriaService {
   }
 
   Future<void> deletar(String token, int id) async {
-    final response = await http.delete(
-      Uri.parse('${ApiConstants.categories}/$id'),
-      headers: _headers(token),
-    );
+    final client = ApiClient(token);
+    final response =
+        await client.delete(Uri.parse('${ApiConstants.categories}/$id'));
     if (response.statusCode != 204) {
       throw Exception(_extractError(response.body));
     }

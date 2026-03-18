@@ -80,6 +80,7 @@ class _HomeTabState extends State<_HomeTab> {
   final _service = DashboardService();
   DashboardModel? _data;
   bool _loading = true;
+  bool _firstLoad = true;
 
   final _currency = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
   final _dateFormat = DateFormat('dd/MM');
@@ -114,7 +115,7 @@ class _HomeTabState extends State<_HomeTab> {
         );
       }
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) setState(() { _loading = false; _firstLoad = false; });
     }
   }
 
@@ -134,7 +135,24 @@ class _HomeTabState extends State<_HomeTab> {
         ],
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const CircularProgressIndicator(),
+                  if (_firstLoad) ...[
+                    const SizedBox(height: 16),
+                    Text(
+                      'Conectando ao servidor...',
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodyMedium
+                          ?.copyWith(color: Colors.grey),
+                    ),
+                  ],
+                ],
+              ),
+            )
           : _data == null
               ? Center(
                   child: Column(

@@ -1,14 +1,9 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
 import '../constants/api_constants.dart';
 import '../models/transaction_model.dart';
+import 'api_client.dart';
 
 class TransactionService {
-  Map<String, String> _headers(String token) => {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      };
-
   Future<List<TransactionModel>> listar(String token,
       {DateTime? inicio, DateTime? fim}) async {
     String url = ApiConstants.transactions;
@@ -21,7 +16,8 @@ class TransactionService {
           '${fim.day.toString().padLeft(2, '0')}';
       url = '$url?inicio=$i&fim=$f';
     }
-    final response = await http.get(Uri.parse(url), headers: _headers(token));
+    final client = ApiClient(token);
+    final response = await client.get(Uri.parse(url));
     if (response.statusCode == 200) {
       final List list = jsonDecode(response.body) as List;
       return list
@@ -39,9 +35,9 @@ class TransactionService {
     int? categoriaId,
     int? contaId,
   }) async {
-    final response = await http.post(
+    final client = ApiClient(token);
+    final response = await client.post(
       Uri.parse(ApiConstants.transactions),
-      headers: _headers(token),
       body: jsonEncode({
         'descricao': descricao,
         'valor': valor,
@@ -66,9 +62,9 @@ class TransactionService {
     int? categoriaId,
     int? contaId,
   }) async {
-    final response = await http.put(
+    final client = ApiClient(token);
+    final response = await client.put(
       Uri.parse('${ApiConstants.transactions}/$id'),
-      headers: _headers(token),
       body: jsonEncode({
         'descricao': descricao,
         'valor': valor,
@@ -85,9 +81,9 @@ class TransactionService {
   }
 
   Future<void> deletar(String token, int id) async {
-    final response = await http.delete(
+    final client = ApiClient(token);
+    final response = await client.delete(
       Uri.parse('${ApiConstants.transactions}/$id'),
-      headers: _headers(token),
     );
     if (response.statusCode != 204) {
       throw Exception('Erro ao excluir transação');
@@ -95,9 +91,9 @@ class TransactionService {
   }
 
   Future<List<int>> exportarCsv(String token) async {
-    final response = await http.get(
+    final client = ApiClient(token);
+    final response = await client.get(
       Uri.parse(ApiConstants.transactionExportCsv),
-      headers: _headers(token),
     );
     if (response.statusCode == 200) {
       return response.bodyBytes.toList();
