@@ -104,8 +104,8 @@ class TransacaoRepositoryTest {
 
         val result = transacaoRepository.findDespesasPorCategoria(usuario, TipoTransacao.DESPESA)
         assertThat(result).hasSize(2)
-        val catRow = result.map { it as Array<*> }.first { it[0] == cat1.nome }
-        assertThat((catRow[1] as Number).toDouble()).isEqualTo(350.0)
+        val catRow = result.first { it.categoria == cat1.nome }
+        assertThat(catRow.total).isEqualTo(350.0)
     }
 
     @Test
@@ -115,7 +115,14 @@ class TransacaoRepositoryTest {
         salvar("Jan Receita", 3000.0, TipoTransacao.RECEITA, jan, null)
         salvar("Jan Despesa", 1000.0, TipoTransacao.DESPESA, jan, null)
         salvar("Fev Receita", 2000.0, TipoTransacao.RECEITA, feb, null)
-        assertThat(transacaoRepository.findEvolucaoMensal(usuario)).hasSize(3)
+        val result = transacaoRepository.findEvolucaoMensal(usuario)
+        assertThat(result).hasSize(2)
+        val rowJan = result.first { it.mes == 1 }
+        assertThat(rowJan.totalReceitas).isEqualTo(3000.0)
+        assertThat(rowJan.totalDespesas).isEqualTo(1000.0)
+        val rowFeb = result.first { it.mes == 2 }
+        assertThat(rowFeb.totalReceitas).isEqualTo(2000.0)
+        assertThat(rowFeb.totalDespesas).isEqualTo(0.0)
     }
 
     @Test

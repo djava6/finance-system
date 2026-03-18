@@ -7,6 +7,7 @@ import br.com.useinet.finance.service.ContaService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.Tag
+import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -26,7 +27,7 @@ class ContaController(private val contaService: ContaService) {
     @PostMapping
     @Operation(summary = "Criar conta")
     fun criar(
-        @RequestBody request: ContaRequest,
+        @Valid @RequestBody request: ContaRequest,
         @AuthenticationPrincipal usuario: Usuario
     ): ResponseEntity<ContaResponse> =
         ResponseEntity.status(HttpStatus.CREATED).body(contaService.criar(request, usuario))
@@ -35,7 +36,7 @@ class ContaController(private val contaService: ContaService) {
     @Operation(summary = "Atualizar conta")
     fun atualizar(
         @PathVariable id: Long,
-        @RequestBody request: ContaRequest,
+        @Valid @RequestBody request: ContaRequest,
         @AuthenticationPrincipal usuario: Usuario
     ): ResponseEntity<ContaResponse> =
         ResponseEntity.ok(contaService.atualizar(id, request, usuario))

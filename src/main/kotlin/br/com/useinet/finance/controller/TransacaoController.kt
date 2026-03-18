@@ -7,6 +7,7 @@ import br.com.useinet.finance.service.TransacaoService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.Tag
+import jakarta.validation.Valid
 import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
@@ -25,7 +26,7 @@ class TransacaoController(private val transacaoService: TransacaoService) {
     @PostMapping
     @Operation(summary = "Criar transação", description = "Registra uma nova receita ou despesa")
     fun criar(
-        @RequestBody request: TransacaoRequest,
+        @Valid @RequestBody request: TransacaoRequest,
         @AuthenticationPrincipal usuario: Usuario
     ): ResponseEntity<TransacaoResponse> =
         ResponseEntity.status(HttpStatus.CREATED).body(transacaoService.criar(request, usuario))
@@ -51,7 +52,7 @@ class TransacaoController(private val transacaoService: TransacaoService) {
     @Operation(summary = "Editar transação", description = "Atualiza descrição, valor, tipo, categoria de uma transação do usuário")
     fun atualizar(
         @PathVariable id: Long,
-        @RequestBody request: TransacaoRequest,
+        @Valid @RequestBody request: TransacaoRequest,
         @AuthenticationPrincipal usuario: Usuario
     ): ResponseEntity<TransacaoResponse> =
         ResponseEntity.ok(transacaoService.atualizar(id, request, usuario))

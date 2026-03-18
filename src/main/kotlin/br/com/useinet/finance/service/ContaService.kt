@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class ContaService(private val contaRepository: ContaRepository) {
 
+    @Transactional(readOnly = true)
     fun listar(usuario: Usuario): List<ContaResponse> =
         contaRepository.findByUsuario(usuario).map { ContaResponse.from(it) }
 
@@ -18,7 +19,7 @@ class ContaService(private val contaRepository: ContaRepository) {
     fun criar(request: ContaRequest, usuario: Usuario): ContaResponse {
         validate(request)
         val conta = Conta().apply {
-            this.nome = request.nome!!.trim()
+            this.nome = requireNotNull(request.nome).trim()
             this.saldo = request.saldo ?: 0.0
             this.usuario = usuario
         }
@@ -30,7 +31,7 @@ class ContaService(private val contaRepository: ContaRepository) {
         validate(request)
         val conta = contaRepository.findByIdAndUsuario(id, usuario)
             .orElseThrow { IllegalArgumentException("Conta não encontrada.") }
-        conta.nome = request.nome!!.trim()
+        conta.nome = requireNotNull(request.nome).trim()
         if (request.saldo != null) conta.saldo = request.saldo
         return ContaResponse.from(contaRepository.save(conta))
     }

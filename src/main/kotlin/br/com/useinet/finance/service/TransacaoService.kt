@@ -49,6 +49,7 @@ class TransacaoService(
         return TransacaoResponse.from(transacaoRepository.save(transacao))
     }
 
+    @Transactional(readOnly = true)
     fun listar(usuario: Usuario, inicio: LocalDateTime?, fim: LocalDateTime?): List<TransacaoResponse> {
         val transacoes = if (inicio != null && fim != null)
             transacaoRepository.findByUsuarioAndDataBetweenOrderByDataDesc(usuario, inicio, fim)
@@ -67,7 +68,7 @@ class TransacaoService(
 
         // Reverter efeito na conta anterior
         transacao.conta?.let {
-            reverterSaldo(it, transacao.tipo!!, transacao.valor!!)
+            reverterSaldo(it, requireNotNull(transacao.tipo), requireNotNull(transacao.valor))
             contaRepository.save(it)
         }
 
@@ -101,7 +102,7 @@ class TransacaoService(
         val transacao = transacaoRepository.findByIdAndUsuario(id, usuario)
             .orElseThrow { IllegalArgumentException("Transação não encontrada.") }
         transacao.conta?.let {
-            reverterSaldo(it, transacao.tipo!!, transacao.valor!!)
+            reverterSaldo(it, requireNotNull(transacao.tipo), requireNotNull(transacao.valor))
             contaRepository.save(it)
         }
         transacaoRepository.delete(transacao)
@@ -114,11 +115,13 @@ class TransacaoService(
     }
 
     private fun ajustarSaldo(conta: Conta, tipo: TipoTransacao, valor: Double) {
-        conta.saldo = if (tipo == TipoTransacao.RECEITA) conta.saldo!! + valor else conta.saldo!! - valor
+        val saldo = requireNotNull(conta.saldo) { "Conta.saldo não pode ser nulo" }
+        conta.saldo = if (tipo == TipoTransacao.RECEITA) saldo + valor else saldo - valor
     }
 
     private fun reverterSaldo(conta: Conta, tipo: TipoTransacao, valor: Double) {
-        conta.saldo = if (tipo == TipoTransacao.RECEITA) conta.saldo!! - valor else conta.saldo!! + valor
+        val saldo = requireNotNull(conta.saldo) { "Conta.saldo não pode ser nulo" }
+        conta.saldo = if (tipo == TipoTransacao.RECEITA) saldo - valor else saldo + valor
     }
 
     fun exportarCsv(usuario: Usuario): ByteArray {
@@ -132,7 +135,7 @@ class TransacaoService(
                 .append(escapeCsv(t.descricao)).append(',')
                 .append(t.valor).append(',')
                 .append(t.tipo).append(',')
-                .append(t.data!!.format(fmt)).append(',')
+                .append(requireNotNull(t.data).format(fmt)).append(',')
                 .append(t.categoria?.let { escapeCsv(it.nome) } ?: "").append(',')
                 .append(t.conta?.let { escapeCsv(it.nome) } ?: "")
                 .append('\n')

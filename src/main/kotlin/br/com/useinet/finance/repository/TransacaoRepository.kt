@@ -1,5 +1,7 @@
 package br.com.useinet.finance.repository
 
+import br.com.useinet.finance.dto.DespesaPorCategoriaResponse
+import br.com.useinet.finance.dto.EvolucaoMensalResponse
 import br.com.useinet.finance.model.Categoria
 import br.com.useinet.finance.model.TipoTransacao
 import br.com.useinet.finance.model.Transacao
@@ -23,13 +25,18 @@ interface TransacaoRepository : JpaRepository<Transacao, Long> {
 
     fun existsByCategoria(categoria: Categoria): Boolean
 
-    @Query(
-        "SELECT COALESCE(t.categoria.nome, 'Sem categoria'), SUM(t.valor) " +
-        "FROM Transacao t " +
-        "WHERE t.usuario = :usuario AND t.tipo = :tipo " +
-        "GROUP BY t.categoria.nome"
-    )
-    fun findDespesasPorCategoria(@Param("usuario") usuario: Usuario, @Param("tipo") tipo: TipoTransacao): List<Any>
+    @Query("""
+        SELECT new br.com.useinet.finance.dto.DespesaPorCategoriaResponse(
+            COALESCE(t.categoria.nome, 'Sem categoria'), SUM(t.valor)
+        )
+        FROM Transacao t
+        WHERE t.usuario = :usuario AND t.tipo = :tipo
+        GROUP BY COALESCE(t.categoria.nome, 'Sem categoria')
+    """)
+    fun findDespesasPorCategoria(
+        @Param("usuario") usuario: Usuario,
+        @Param("tipo") tipo: TipoTransacao
+    ): List<DespesaPorCategoriaResponse>
 
     fun findByUsuarioAndDataBetweenOrderByDataDesc(
         usuario: Usuario,
@@ -37,11 +44,16 @@ interface TransacaoRepository : JpaRepository<Transacao, Long> {
         fim: LocalDateTime
     ): List<Transacao>
 
-    @Query(
-        "SELECT MONTH(t.data), YEAR(t.data), t.tipo, SUM(t.valor) " +
-        "FROM Transacao t WHERE t.usuario = :usuario " +
-        "GROUP BY YEAR(t.data), MONTH(t.data), t.tipo " +
-        "ORDER BY YEAR(t.data), MONTH(t.data)"
-    )
-    fun findEvolucaoMensal(@Param("usuario") usuario: Usuario): List<Any>
+    @Query("""
+        SELECT new br.com.useinet.finance.dto.EvolucaoMensalResponse(
+            YEAR(t.data), MONTH(t.data),
+            SUM(CASE WHEN t.tipo = br.com.useinet.finance.model.TipoTransacao.RECEITA THEN t.valor ELSE 0.0 END),
+            SUM(CASE WHEN t.tipo = br.com.useinet.finance.model.TipoTransacao.DESPESA THEN t.valor ELSE 0.0 END)
+        )
+        FROM Transacao t
+        WHERE t.usuario = :usuario
+        GROUP BY YEAR(t.data), MONTH(t.data)
+        ORDER BY YEAR(t.data), MONTH(t.data)
+    """)
+    fun findEvolucaoMensal(@Param("usuario") usuario: Usuario): List<EvolucaoMensalResponse>
 }

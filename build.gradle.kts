@@ -4,6 +4,7 @@ plugins {
     kotlin("plugin.jpa") version "2.0.21"
     id("org.springframework.boot") version "3.3.6"
     id("io.spring.dependency-management") version "1.1.6"
+    jacoco
 }
 
 group = "br.com.useinet"
@@ -34,6 +35,7 @@ repositories {
 dependencies {
     // Spring Boot
     implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-security")
@@ -71,4 +73,13 @@ tasks.withType<Test> {
         "-XX:+EnableDynamicAgentLoading",
         "-Xshare:off"
     )
+    finalizedBy(tasks.jacocoTestReport)
+}
+
+tasks.jacocoTestReport {
+    dependsOn(tasks.test)
+    reports {
+        xml.required = true
+        html.required = true
+    }
 }

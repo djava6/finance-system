@@ -1,5 +1,7 @@
 package br.com.useinet.finance.service
 
+import br.com.useinet.finance.dto.DespesaPorCategoriaResponse
+import br.com.useinet.finance.dto.EvolucaoMensalResponse
 import br.com.useinet.finance.model.TipoTransacao
 import br.com.useinet.finance.model.Transacao
 import br.com.useinet.finance.model.Usuario
@@ -61,8 +63,8 @@ class DashboardServiceTest {
         `when`(contaRepository.findByUsuario(usuario)).thenReturn(emptyList())
         `when`(transacaoRepository.findTop10ByUsuarioOrderByDataDesc(usuario)).thenReturn(emptyList())
         `when`(transacaoRepository.findDespesasPorCategoria(usuario, TipoTransacao.DESPESA)).thenReturn(listOf(
-            arrayOf("Alimentação", 500.0),
-            arrayOf("Transporte", 300.0)
+            DespesaPorCategoriaResponse("Alimentação", 500.0),
+            DespesaPorCategoriaResponse("Transporte", 300.0)
         ))
 
         val response = dashboardService.getDashboard(usuario)
@@ -80,8 +82,7 @@ class DashboardServiceTest {
         `when`(transacaoRepository.findTop10ByUsuarioOrderByDataDesc(usuario)).thenReturn(emptyList())
         `when`(transacaoRepository.findDespesasPorCategoria(usuario, TipoTransacao.DESPESA)).thenReturn(emptyList())
         `when`(transacaoRepository.findEvolucaoMensal(usuario)).thenReturn(listOf(
-            arrayOf(1, 2025, "RECEITA", 3000.0),
-            arrayOf(1, 2025, "DESPESA", 1000.0)
+            EvolucaoMensalResponse(ano = 2025, mes = 1, totalReceitas = 3000.0, totalDespesas = 1000.0)
         ))
 
         val response = dashboardService.getDashboard(usuario)

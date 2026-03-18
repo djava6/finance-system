@@ -8,6 +8,7 @@ import br.com.useinet.finance.repository.TransacaoRepository
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.Tag
+import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -28,7 +29,7 @@ class CategoriaController(
 
     @PostMapping
     @Operation(summary = "Criar categoria")
-    fun criar(@RequestBody request: CategoriaRequest): ResponseEntity<CategoriaResponse> {
+    fun criar(@Valid @RequestBody request: CategoriaRequest): ResponseEntity<CategoriaResponse> {
         if (request.nome.isNullOrBlank()) throw IllegalArgumentException("Nome da categoria é obrigatório.")
         if (categoriaRepository.findByNome(request.nome).isPresent) throw IllegalArgumentException("Categoria já existe.")
         val categoria = Categoria().apply { this.nome = request.nome.trim() }
@@ -37,7 +38,7 @@ class CategoriaController(
 
     @PutMapping("/{id}")
     @Operation(summary = "Renomear categoria")
-    fun renomear(@PathVariable id: Long, @RequestBody request: CategoriaRequest): ResponseEntity<CategoriaResponse> {
+    fun renomear(@PathVariable id: Long, @Valid @RequestBody request: CategoriaRequest): ResponseEntity<CategoriaResponse> {
         if (request.nome.isNullOrBlank()) throw IllegalArgumentException("Nome da categoria é obrigatório.")
         val categoria = categoriaRepository.findById(id)
             .orElseThrow { IllegalArgumentException("Categoria não encontrada.") }
