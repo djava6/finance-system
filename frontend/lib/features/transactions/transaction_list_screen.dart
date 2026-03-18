@@ -1,3 +1,4 @@
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -63,6 +64,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
         _filterInicio = picked.start;
         _filterFim = picked.end;
       });
+      await FirebaseAnalytics.instance.logEvent(name: 'filtro_periodo');
       _load();
     }
   }
@@ -80,6 +82,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
       final token = context.read<AuthProvider>().token!;
       final bytes = await _service.exportarCsv(token);
       await saveFile(bytes, 'transacoes.csv');
+      await FirebaseAnalytics.instance.logEvent(name: 'exportar_csv');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('CSV exportado com sucesso')),

@@ -1,3 +1,4 @@
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/models/categoria_model.dart';
@@ -71,6 +72,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         tipo: _tipo,
         categoriaId: _categoriaId,
         contaId: _contaId,
+      );
+      await FirebaseAnalytics.instance.logEvent(
+        name: 'criar_transacao',
+        parameters: {'tipo': _tipo.toLowerCase()},
       );
       if (mounted) Navigator.pop(context, true);
     } catch (e) {

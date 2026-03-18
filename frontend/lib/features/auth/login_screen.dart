@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -19,6 +20,7 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _loadingGoogle = true);
     try {
       await context.read<AuthProvider>().signInWithGoogle();
+      await FirebaseAnalytics.instance.logEvent(name: 'login_google');
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -34,6 +36,7 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _loadingApple = true);
     try {
       await context.read<AuthProvider>().signInWithApple();
+      await FirebaseAnalytics.instance.logEvent(name: 'login_apple');
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
