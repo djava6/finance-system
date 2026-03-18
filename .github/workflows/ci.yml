@@ -106,7 +106,7 @@ jobs:
             --region ${{ secrets.GCP_REGION }} \
             --platform managed \
             --allow-unauthenticated \
-            --set-env-vars "SPRING_PROFILES_ACTIVE=prod" \
+            --set-env-vars "SPRING_PROFILES_ACTIVE=prod,SENTRY_DSN=${{ secrets.SENTRY_DSN }}" \
             --service-account "finance-system-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com" \
             --min-instances 1 \
             --memory 1Gi \

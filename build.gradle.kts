@@ -49,6 +49,9 @@ dependencies {
     // Firebase
     implementation("com.google.firebase:firebase-admin:9.4.1")
 
+    // Sentry
+    implementation("io.sentry:sentry-spring-boot-starter-jakarta:7.22.0")
+
     // API Docs
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0")
 
