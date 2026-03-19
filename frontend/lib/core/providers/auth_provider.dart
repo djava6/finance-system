@@ -4,6 +4,7 @@ import 'package:crypto/crypto.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import '../services/api_client.dart';
 
 class AuthProvider extends ChangeNotifier {
   User? _user;
@@ -11,6 +12,7 @@ class AuthProvider extends ChangeNotifier {
   bool _locked = false;
 
   AuthProvider() {
+    ApiClient.onUnauthorized = logout;
     FirebaseAuth.instance.idTokenChanges().listen(_onIdTokenChanged);
   }
 

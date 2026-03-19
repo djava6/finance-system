@@ -4,7 +4,9 @@ import '../models/transaction_model.dart';
 import 'api_client.dart';
 
 class TransactionService {
-  Future<List<TransactionModel>> listar(String token,
+  final _client = ApiClient();
+
+  Future<List<TransactionModel>> listar(
       {DateTime? inicio, DateTime? fim}) async {
     String url = ApiConstants.transactions;
     if (inicio != null && fim != null) {
@@ -16,8 +18,7 @@ class TransactionService {
           '${fim.day.toString().padLeft(2, '0')}';
       url = '$url?inicio=$i&fim=$f';
     }
-    final client = ApiClient(token);
-    final response = await client.get(Uri.parse(url));
+    final response = await _client.get(Uri.parse(url));
     if (response.statusCode == 200) {
       final List list = jsonDecode(response.body) as List;
       return list
@@ -28,15 +29,13 @@ class TransactionService {
   }
 
   Future<TransactionModel> criar({
-    required String token,
     required String descricao,
     required double valor,
     required String tipo,
     int? categoriaId,
     int? contaId,
   }) async {
-    final client = ApiClient(token);
-    final response = await client.post(
+    final response = await _client.post(
       Uri.parse(ApiConstants.transactions),
       body: jsonEncode({
         'descricao': descricao,
@@ -54,7 +53,6 @@ class TransactionService {
   }
 
   Future<TransactionModel> atualizar({
-    required String token,
     required int id,
     required String descricao,
     required double valor,
@@ -62,8 +60,7 @@ class TransactionService {
     int? categoriaId,
     int? contaId,
   }) async {
-    final client = ApiClient(token);
-    final response = await client.put(
+    final response = await _client.put(
       Uri.parse('${ApiConstants.transactions}/$id'),
       body: jsonEncode({
         'descricao': descricao,
@@ -80,9 +77,8 @@ class TransactionService {
     throw Exception(_extractError(response.body));
   }
 
-  Future<void> deletar(String token, int id) async {
-    final client = ApiClient(token);
-    final response = await client.delete(
+  Future<void> deletar(int id) async {
+    final response = await _client.delete(
       Uri.parse('${ApiConstants.transactions}/$id'),
     );
     if (response.statusCode != 204) {
@@ -90,9 +86,8 @@ class TransactionService {
     }
   }
 
-  Future<List<int>> exportarCsv(String token) async {
-    final client = ApiClient(token);
-    final response = await client.get(
+  Future<List<int>> exportarCsv() async {
+    final response = await _client.get(
       Uri.parse(ApiConstants.transactionExportCsv),
     );
     if (response.statusCode == 200) {
