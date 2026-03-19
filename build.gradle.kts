@@ -55,6 +55,9 @@ dependencies {
     // API Docs
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0")
 
+    // Rate limiting
+    implementation("com.bucket4j:bucket4j-core:8.10.1")
+
     // Local dev
     implementation("me.paulschwarz:spring-dotenv:4.0.0")
 
