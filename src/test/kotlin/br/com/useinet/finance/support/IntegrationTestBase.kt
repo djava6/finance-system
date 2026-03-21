@@ -9,11 +9,8 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.testcontainers.containers.PostgreSQLContainer
-import org.testcontainers.junit.jupiter.Container
-import org.testcontainers.junit.jupiter.Testcontainers
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Testcontainers
 @ActiveProfiles("test")
 abstract class IntegrationTestBase {
 
@@ -21,12 +18,9 @@ abstract class IntegrationTestBase {
     @Autowired protected lateinit var jdbcTemplate: JdbcTemplate
 
     companion object {
-        @Container
         @JvmStatic
         val postgres: PostgreSQLContainer<*> = PostgreSQLContainer("postgres:16-alpine")
-            .withDatabaseName("finance_test")
-            .withUsername("postgres")
-            .withPassword("postgres")
+            .apply { start() }
 
         @DynamicPropertySource
         @JvmStatic
