@@ -7,6 +7,12 @@ plugins {
     jacoco
 }
 
+// macOS cria arquivos ._* em volumes externos que quebram a compilação incremental do Kotlin.
+// Redireciona o build para /tmp quando o projeto estiver em /Volumes/.
+if (projectDir.absolutePath.startsWith("/Volumes/")) {
+    layout.buildDirectory.set(file("/tmp/${rootProject.name}-build"))
+}
+
 group = "br.com.useinet"
 version = "1.0-SNAPSHOT"
 
