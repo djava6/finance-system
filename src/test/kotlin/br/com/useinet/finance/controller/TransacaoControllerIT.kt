@@ -1,6 +1,9 @@
 package br.com.useinet.finance.controller
 
+import br.com.useinet.finance.dto.PageResponse
 import br.com.useinet.finance.dto.TransacaoResponse
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseToken
 import org.assertj.core.api.Assertions.assertThat
@@ -22,6 +25,7 @@ class TransacaoControllerIT {
 
     @Autowired lateinit var restTemplate: TestRestTemplate
     @Autowired lateinit var jdbcTemplate: JdbcTemplate
+    @Autowired lateinit var objectMapper: ObjectMapper
     @MockBean lateinit var firebaseAuth: FirebaseAuth
 
     companion object {
@@ -61,9 +65,10 @@ class TransacaoControllerIT {
     @Test
     fun listar_shouldReturnTransacoesDoUsuario() {
         restTemplate.exchange("/transactions", HttpMethod.POST, HttpEntity(mapOf("descricao" to "Mercado", "valor" to 200.0, "tipo" to "DESPESA"), authHeaders()), TransacaoResponse::class.java)
-        val response = restTemplate.exchange("/transactions", HttpMethod.GET, HttpEntity<Any>(authHeaders()), Array<TransacaoResponse>::class.java)
+        val response = restTemplate.exchange("/transactions", HttpMethod.GET, HttpEntity<Any>(authHeaders()), String::class.java)
         assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
-        assertThat(response.body).isNotEmpty
+        val page: PageResponse<TransacaoResponse> = objectMapper.readValue(response.body!!)
+        assertThat(page.content).isNotEmpty
     }
 
     @Test
@@ -105,9 +110,10 @@ class TransacaoControllerIT {
     @Test
     fun listar_comFiltroData_shouldReturn200() {
         restTemplate.exchange("/transactions", HttpMethod.POST, HttpEntity(mapOf("descricao" to "Filtrado", "valor" to 50.0, "tipo" to "DESPESA"), authHeaders()), TransacaoResponse::class.java)
-        val response = restTemplate.exchange("/transactions?inicio=2020-01-01&fim=2099-12-31", HttpMethod.GET, HttpEntity<Any>(authHeaders()), Array<TransacaoResponse>::class.java)
+        val response = restTemplate.exchange("/transactions?inicio=2020-01-01&fim=2099-12-31", HttpMethod.GET, HttpEntity<Any>(authHeaders()), String::class.java)
         assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
-        assertThat(response.body).isNotNull
+        val page: PageResponse<TransacaoResponse> = objectMapper.readValue(response.body!!)
+        assertThat(page.totalElements).isGreaterThanOrEqualTo(1)
     }
 
     @Test
