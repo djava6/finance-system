@@ -6,7 +6,7 @@ import org.springframework.security.core.userdetails.UserDetails
 
 @Entity
 @Table(name = "usuarios")
-open class Usuario : UserDetails {
+class Usuario : UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -1,12 +1,14 @@
 package br.com.useinet.finance.model
 
 import jakarta.persistence.*
+import org.hibernate.annotations.JdbcTypeCode
+import org.hibernate.type.SqlTypes
 import java.math.BigDecimal
 import java.time.OffsetDateTime
 
 @Entity
 @Table(name = "billing_events")
-open class BillingEvent {
+class BillingEvent {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -31,4 +33,8 @@ open class BillingEvent {
 
     @Column(name = "created_at")
     var createdAt: OffsetDateTime? = null
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "extra_info", columnDefinition = "jsonb")
+    var extraInfo: String? = null
 }

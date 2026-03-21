@@ -17,6 +17,12 @@ abstract class IntegrationTestBase {
     @MockBean protected lateinit var firebaseAuth: FirebaseAuth
     @Autowired protected lateinit var jdbcTemplate: JdbcTemplate
 
+    protected fun cleanupUser(email: String) {
+        jdbcTemplate.update("DELETE FROM transacoes WHERE usuario_id IN (SELECT id FROM usuarios WHERE email = ?)", email)
+        jdbcTemplate.update("DELETE FROM contas WHERE usuario_id IN (SELECT id FROM usuarios WHERE email = ?)", email)
+        jdbcTemplate.update("DELETE FROM usuarios WHERE email = ?", email)
+    }
+
     companion object {
         @JvmStatic
         val postgres: PostgreSQLContainer<*> = PostgreSQLContainer("postgres:16-alpine")

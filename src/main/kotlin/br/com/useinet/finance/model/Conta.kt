@@ -5,7 +5,7 @@ import jakarta.persistence.*
 
 @Entity
 @Table(name = "contas")
-open class Conta {
+class Conta {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

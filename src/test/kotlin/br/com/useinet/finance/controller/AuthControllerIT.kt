@@ -30,12 +30,6 @@ class AuthControllerIT : IntegrationTestBase() {
         `when`(firebaseAuth.verifyIdToken(eq(MOCK_TOKEN))).thenReturn(mockToken)
     }
 
-    private fun cleanupUser(email: String) {
-        jdbcTemplate.update("DELETE FROM transacoes WHERE usuario_id IN (SELECT id FROM usuarios WHERE email = ?)", email)
-        jdbcTemplate.update("DELETE FROM contas WHERE usuario_id IN (SELECT id FROM usuarios WHERE email = ?)", email)
-        jdbcTemplate.update("DELETE FROM usuarios WHERE email = ?", email)
-    }
-
     @Test
     fun unauthenticated_shouldReturn401() {
         val response = restTemplate.getForEntity("/contas", String::class.java)
