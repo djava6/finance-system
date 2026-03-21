@@ -13,6 +13,11 @@ if (projectDir.absolutePath.startsWith("/Volumes/")) {
     layout.buildDirectory.set(file("/tmp/${rootProject.name}-build"))
 }
 
+// Override Spring Boot BOM's Testcontainers version to fix Docker Desktop 4.65 compatibility
+// (Spring Boot 3.3.6 BOM locks Testcontainers to 1.19.8 / docker-java 3.3.6 which defaults to
+// API version 1.32, but Docker Desktop 4.65 requires API ≥ 1.44)
+extra["testcontainers.version"] = "1.21.3"
+
 group = "br.com.useinet"
 version = "1.0-SNAPSHOT"
 
@@ -78,8 +83,8 @@ dependencies {
     testImplementation("org.mockito.kotlin:mockito-kotlin:5.4.0")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
-    testImplementation("org.testcontainers:junit-jupiter")
-    testImplementation("org.testcontainers:postgresql")
+    testImplementation("org.testcontainers:junit-jupiter:1.21.3")
+    testImplementation("org.testcontainers:postgresql:1.21.3")
 }
 
 tasks.withType<Test> {
@@ -88,6 +93,9 @@ tasks.withType<Test> {
         "-XX:+EnableDynamicAgentLoading",
         "-Xshare:off"
     )
+    // docker-java defaults to API 1.32; Docker Desktop 4.65+ requires ≥1.44.
+    // Setting this system property forces all docker-java requests to use /v1.44/.
+    systemProperty("api.version", "1.44")
     finalizedBy(tasks.jacocoTestReport)
 }
 
