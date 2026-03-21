@@ -219,4 +219,57 @@ class TransacaoServiceTest {
             .isInstanceOf(IllegalArgumentException::class.java)
             .hasMessageContaining("Tipo da transação é obrigatório")
     }
+
+    @Test
+    fun criar_shouldThrowWhenCategoriaNotFound() {
+        val request = TransacaoRequest(descricao = "Test", valor = 100.0, tipo = TipoTransacao.DESPESA, categoriaId = 99L)
+        `when`(categoriaRepository.findById(99L)).thenReturn(java.util.Optional.empty())
+        assertThatThrownBy { transacaoService.criar(request, usuarioMock()) }
+            .isInstanceOf(IllegalArgumentException::class.java)
+            .hasMessageContaining("Categoria não encontrada")
+    }
+
+    @Test
+    fun atualizar_shouldThrowWhenCategoriaNotFound() {
+        val usuario = usuarioMock()
+        val existing = Transacao().apply { descricao = "X"; valor = 100.0; tipo = TipoTransacao.RECEITA; data = LocalDateTime.now() }
+        val request = TransacaoRequest(descricao = "X", valor = 100.0, tipo = TipoTransacao.RECEITA, categoriaId = 99L)
+        `when`(transacaoRepository.findByIdAndUsuario(1L, usuario)).thenReturn(java.util.Optional.of(existing))
+        `when`(categoriaRepository.findById(99L)).thenReturn(java.util.Optional.empty())
+        assertThatThrownBy { transacaoService.atualizar(1L, request, usuario) }
+            .isInstanceOf(IllegalArgumentException::class.java)
+            .hasMessageContaining("Categoria não encontrada")
+    }
+
+    @Test
+    fun listar_shouldUseDateFilterWhenInicioAndFimProvided() {
+        val usuario = usuarioMock()
+        val inicio = LocalDateTime.of(2025, 1, 1, 0, 0)
+        val fim = LocalDateTime.of(2025, 12, 31, 23, 59)
+        val pageable = PageRequest.of(0, 20)
+        val t = Transacao().apply { descricao = "Filtrado"; valor = 500.0; tipo = TipoTransacao.RECEITA; data = LocalDateTime.of(2025, 6, 1, 0, 0) }
+        `when`(transacaoRepository.findByUsuarioAndDataBetween(usuario, inicio, fim, pageable)).thenReturn(PageImpl(listOf(t)))
+
+        val result = transacaoService.listar(usuario, inicio, fim, pageable)
+        assertThat(result.content).hasSize(1)
+        assertThat(result.content[0].descricao).isEqualTo("Filtrado")
+        verify(transacaoRepository).findByUsuarioAndDataBetween(usuario, inicio, fim, pageable)
+    }
+
+    @Test
+    fun atualizar_shouldClearContaWhenContaIdIsNull() {
+        val usuario = usuarioMock()
+        val conta = Conta().apply { id = 1L; saldo = 800.0 }
+        val existing = Transacao().apply { descricao = "Original"; valor = 200.0; tipo = TipoTransacao.DESPESA; data = LocalDateTime.now(); this.conta = conta }
+        val request = TransacaoRequest(descricao = "Atualizado", valor = 200.0, tipo = TipoTransacao.DESPESA, contaId = null)
+
+        `when`(transacaoRepository.findByIdAndUsuario(1L, usuario)).thenReturn(java.util.Optional.of(existing))
+        `when`(contaRepository.save(any())).thenReturn(conta)
+        `when`(transacaoRepository.save(any())).thenAnswer { it.getArgument(0) }
+
+        val response = transacaoService.atualizar(1L, request, usuario)
+        assertThat(response.contaId).isNull()
+        // conta anterior deve ter saldo revertido
+        assertThat(conta.saldo).isEqualTo(1000.0)
+    }
 }

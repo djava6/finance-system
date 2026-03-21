@@ -13,11 +13,17 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.InjectMocks
 import org.mockito.Mock
+import org.mockito.Mockito.never
+import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
 import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.kotlin.any
+import org.mockito.kotlin.whenever
+import org.springframework.mock.web.MockMultipartFile
 import java.nio.charset.StandardCharsets
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.util.Optional
 
 @ExtendWith(MockitoExtension::class)
 class CsvExportTest {
@@ -178,5 +184,98 @@ class CsvExportTest {
 
         val content = String(exportAll(usuario), StandardCharsets.UTF_8)
         assertThat(content).contains("\"Salário, bônus\"")
+    }
+
+    // ─── importarCsv ──────────────────────────────────────────────────────────
+
+    private fun csv(vararg rows: String): MockMultipartFile {
+        val header = "data,descricao,valor,tipo,categoria"
+        val content = (listOf(header) + rows).joinToString("\n")
+        return MockMultipartFile("file", "import.csv", "text/csv", content.toByteArray(Charsets.UTF_8))
+    }
+
+    @Test
+    fun importarCsv_shouldImportValidRows() {
+        val usuario = usuarioMock()
+        `when`(transacaoRepository.existsByUsuarioAndDataAndValorAndDescricao(any(), any(), any(), any())).thenReturn(false)
+        `when`(transacaoRepository.save(any())).thenAnswer { it.getArgument(0) }
+
+        val file = csv("2025-01-15,Salário,5000.0,RECEITA,", "2025-01-20,Mercado,200.0,DESPESA,")
+        val result = transacaoService.importarCsv(file, usuario)
+
+        assertThat(result.importadas).isEqualTo(2)
+        assertThat(result.duplicatas).isEqualTo(0)
+        assertThat(result.erros).isEqualTo(0)
+    }
+
+    @Test
+    fun importarCsv_shouldSkipDuplicates() {
+        val usuario = usuarioMock()
+        `when`(transacaoRepository.existsByUsuarioAndDataAndValorAndDescricao(any(), any(), any(), any())).thenReturn(true)
+
+        val file = csv("2025-01-15,Salário,5000.0,RECEITA,")
+        val result = transacaoService.importarCsv(file, usuario)
+
+        assertThat(result.importadas).isEqualTo(0)
+        assertThat(result.duplicatas).isEqualTo(1)
+    }
+
+    @Test
+    fun importarCsv_shouldCountErrorsForInvalidRows() {
+        val usuario = usuarioMock()
+        // invalid tipo + invalid date — neither reaches existsByUsuario... check, so no stub needed
+        val file = csv("2025-01-15,Salário,5000.0,INVALIDO,", "nao-e-data,Mercado,200.0,DESPESA,")
+        val result = transacaoService.importarCsv(file, usuario)
+
+        assertThat(result.erros).isEqualTo(2)
+        assertThat(result.mensagensErro).hasSize(2)
+        assertThat(result.mensagensErro[0]).contains("Linha 2")
+        assertThat(result.mensagensErro[1]).contains("Linha 3")
+    }
+
+    @Test
+    fun importarCsv_shouldAssociateCategoryByName() {
+        val usuario = usuarioMock()
+        val cat = Categoria().apply { id = 1L; nome = "Alimentação" }
+        `when`(transacaoRepository.existsByUsuarioAndDataAndValorAndDescricao(any(), any(), any(), any())).thenReturn(false)
+        `when`(categoriaRepository.findByNome("Alimentação")).thenReturn(Optional.of(cat))
+        `when`(transacaoRepository.save(any())).thenAnswer { it.getArgument(0) }
+
+        val file = csv("2025-01-20,Mercado,200.0,DESPESA,Alimentação")
+        transacaoService.importarCsv(file, usuario)
+
+        verify(categoriaRepository).findByNome("Alimentação")
+    }
+
+    @Test
+    fun importarCsv_shouldTreatNegativeValorAsAbsolute() {
+        val usuario = usuarioMock()
+        `when`(transacaoRepository.existsByUsuarioAndDataAndValorAndDescricao(any(), any(), any(), any())).thenReturn(false)
+        val saved = mutableListOf<Transacao>()
+        `when`(transacaoRepository.save(any())).thenAnswer { inv ->
+            val t = inv.getArgument<Transacao>(0)
+            saved.add(t)
+            t
+        }
+
+        val file = csv("2025-01-20,Compra,-150.0,DESPESA,")
+        transacaoService.importarCsv(file, usuario)
+
+        assertThat(saved).hasSize(1)
+        assertThat(saved[0].valor).isEqualTo(150.0)
+    }
+
+    @Test
+    fun importarCsv_shouldIgnoreBlankCategoryColumn() {
+        val usuario = usuarioMock()
+        `when`(transacaoRepository.existsByUsuarioAndDataAndValorAndDescricao(any(), any(), any(), any())).thenReturn(false)
+        `when`(transacaoRepository.save(any())).thenAnswer { it.getArgument(0) }
+
+        val file = csv("2025-01-20,Mercado,200.0,DESPESA,")
+        val result = transacaoService.importarCsv(file, usuario)
+
+        assertThat(result.importadas).isEqualTo(1)
+        // findByNome should NOT be called for blank category
+        verify(categoriaRepository, never()).findByNome(any())
     }
 }
