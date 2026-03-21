@@ -144,4 +144,38 @@ class TransacaoControllerIT : IntegrationTestBase() {
         assertThat(response.body!!.contaId).isEqualTo(contaId.toLong())
         assertThat(response.body!!.conta).isEqualTo("Nubank")
     }
+
+    @Test
+    fun listar_paginacao_shouldRespectPageSizeParam() {
+        repeat(5) { i ->
+            restTemplate.exchange("/transactions", HttpMethod.POST,
+                HttpEntity(mapOf("descricao" to "Pag $i", "valor" to 10.0, "tipo" to "DESPESA"), authHeaders()),
+                TransacaoResponse::class.java)
+        }
+
+        val response = restTemplate.exchange("/transactions?page=0&size=2", HttpMethod.GET, HttpEntity<Any>(authHeaders()), String::class.java)
+        assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
+        val page = jacksonObjectMapper().readValue<Map<String, Any>>(response.body!!)
+        val content = page["content"] as List<*>
+        assertThat(content).hasSize(2)
+        assertThat((page["totalElements"] as Number).toInt()).isGreaterThanOrEqualTo(5)
+    }
+
+    @Test
+    fun listar_shouldNotReturnOtherUsersTransacoes() {
+        val otherToken = "mock-other-transacao-token"
+        val otherFirebaseToken = mock(FirebaseToken::class.java)
+        `when`(otherFirebaseToken.uid).thenReturn("uid-other-transacao")
+        `when`(otherFirebaseToken.email).thenReturn("other.transacao.isolation@it.com")
+        `when`(otherFirebaseToken.name).thenReturn("Other Transacao User")
+        `when`(firebaseAuth.verifyIdToken(eq(otherToken))).thenReturn(otherFirebaseToken)
+        val otherHeaders = HttpHeaders().apply { setBearerAuth(otherToken) }
+
+        restTemplate.exchange("/transactions", HttpMethod.POST,
+            HttpEntity(mapOf("descricao" to "Other Secret Transaction", "valor" to 9999.0, "tipo" to "RECEITA"), otherHeaders),
+            Any::class.java)
+
+        val response = restTemplate.exchange("/transactions", HttpMethod.GET, HttpEntity<Any>(authHeaders()), String::class.java)
+        assertThat(response.body).doesNotContain("Other Secret Transaction")
+    }
 }

@@ -62,4 +62,19 @@ class ContaRepositoryTest : IntegrationTestBase() {
         val conta = salvarConta("Secreta", 9999.0, usuario1)
         assertThat(contaRepository.findByIdAndUsuario(conta.id!!, usuario2)).isEmpty()
     }
+
+    @Test
+    fun save_shouldPersistSaldoCorrectly() {
+        val conta = contaRepository.save(Conta().apply { nome = "Com Saldo"; saldo = 1234.56; usuario = usuario1 })
+        val found = contaRepository.findByIdAndUsuario(conta.id!!, usuario1)
+        assertThat(found).isPresent
+        assertThat(found.get().saldo).isEqualTo(1234.56)
+    }
+
+    @Test
+    fun delete_shouldRemoveConta() {
+        val conta = salvarConta("Para Remover", 100.0, usuario1)
+        contaRepository.delete(conta)
+        assertThat(contaRepository.findByIdAndUsuario(conta.id!!, usuario1)).isEmpty()
+    }
 }

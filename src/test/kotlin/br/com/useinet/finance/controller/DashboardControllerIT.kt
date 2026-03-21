@@ -99,4 +99,47 @@ class DashboardControllerIT : IntegrationTestBase() {
         assertThat(response.body!!.totalReceitas).isEqualTo(0.0)
         assertThat(response.body!!.ultimasTransacoes).isEmpty()
     }
+
+    @Test
+    fun getDashboard_shouldReturnDespesasPorCategoriaBreakdown() {
+        val catResp = restTemplate.postForEntity(
+            "/categories",
+            HttpEntity(mapOf("nome" to "Alimentação Dashboard IT"), authHeaders()),
+            Map::class.java
+        )
+        val categoriaId = (catResp.body!!["id"] as Number).toLong()
+
+        restTemplate.exchange("/transactions", HttpMethod.POST,
+            HttpEntity(mapOf("descricao" to "Mercado", "valor" to 300.0, "tipo" to "DESPESA", "categoriaId" to categoriaId), authHeaders()),
+            Any::class.java)
+        restTemplate.exchange("/transactions", HttpMethod.POST,
+            HttpEntity(mapOf("descricao" to "Padaria", "valor" to 50.0, "tipo" to "DESPESA", "categoriaId" to categoriaId), authHeaders()),
+            Any::class.java)
+
+        val response = restTemplate.exchange("/dashboard", HttpMethod.GET, HttpEntity<Any>(authHeaders()), DashboardResponse::class.java)
+        assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
+        val cat = response.body!!.despesasPorCategoria.find { it.categoria == "Alimentação Dashboard IT" }
+        assertThat(cat).isNotNull
+        assertThat(cat!!.total).isEqualTo(350.0)
+
+        // cleanup category created outside user-scoped cleanup
+        jdbcTemplate.update("DELETE FROM categorias WHERE nome = 'Alimentação Dashboard IT'")
+    }
+
+    @Test
+    fun getDashboard_shouldReturnEvolucaoMensalWithTransactions() {
+        restTemplate.exchange("/transactions", HttpMethod.POST,
+            HttpEntity(mapOf("descricao" to "Salário Evolução", "valor" to 4000.0, "tipo" to "RECEITA"), authHeaders()),
+            Any::class.java)
+        restTemplate.exchange("/transactions", HttpMethod.POST,
+            HttpEntity(mapOf("descricao" to "Conta Evolução", "valor" to 1000.0, "tipo" to "DESPESA"), authHeaders()),
+            Any::class.java)
+
+        val response = restTemplate.exchange("/dashboard", HttpMethod.GET, HttpEntity<Any>(authHeaders()), DashboardResponse::class.java)
+        assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
+        assertThat(response.body!!.evolucaoMensal).isNotEmpty()
+        val currentEntry = response.body!!.evolucaoMensal[0]
+        assertThat(currentEntry.totalReceitas).isGreaterThan(0.0)
+        assertThat(currentEntry.totalDespesas).isGreaterThan(0.0)
+    }
 }

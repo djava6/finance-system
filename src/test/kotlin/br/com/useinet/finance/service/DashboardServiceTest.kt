@@ -92,4 +92,34 @@ class DashboardServiceTest {
         assertThat(response.evolucaoMensal[0].totalReceitas).isEqualTo(3000.0)
         assertThat(response.evolucaoMensal[0].totalDespesas).isEqualTo(1000.0)
     }
+
+    @Test
+    fun getDashboard_shouldCalculateSaldoNegativoWhenDespesasExceedReceitas() {
+        val usuario = usuarioMock()
+        `when`(transacaoRepository.sumValorByUsuarioAndTipo(usuario, TipoTransacao.RECEITA)).thenReturn(1000.0)
+        `when`(transacaoRepository.sumValorByUsuarioAndTipo(usuario, TipoTransacao.DESPESA)).thenReturn(2500.0)
+        `when`(contaRepository.findByUsuario(usuario)).thenReturn(emptyList())
+        `when`(transacaoRepository.findTop10ByUsuarioOrderByDataDesc(usuario)).thenReturn(emptyList())
+        `when`(transacaoRepository.findDespesasPorCategoria(usuario, TipoTransacao.DESPESA)).thenReturn(emptyList())
+
+        val response = dashboardService.getDashboard(usuario)
+        assertThat(response.totalReceitas).isEqualTo(1000.0)
+        assertThat(response.totalDespesas).isEqualTo(2500.0)
+        assertThat(response.saldo).isEqualTo(-1500.0)
+    }
+
+    @Test
+    fun getDashboard_shouldReturnZeroSaldoWhenReceitasEqualDespesas() {
+        val usuario = usuarioMock()
+        `when`(transacaoRepository.sumValorByUsuarioAndTipo(usuario, TipoTransacao.RECEITA)).thenReturn(2000.0)
+        `when`(transacaoRepository.sumValorByUsuarioAndTipo(usuario, TipoTransacao.DESPESA)).thenReturn(2000.0)
+        `when`(contaRepository.findByUsuario(usuario)).thenReturn(emptyList())
+        `when`(transacaoRepository.findTop10ByUsuarioOrderByDataDesc(usuario)).thenReturn(emptyList())
+        `when`(transacaoRepository.findDespesasPorCategoria(usuario, TipoTransacao.DESPESA)).thenReturn(emptyList())
+
+        val response = dashboardService.getDashboard(usuario)
+        assertThat(response.totalReceitas).isEqualTo(2000.0)
+        assertThat(response.totalDespesas).isEqualTo(2000.0)
+        assertThat(response.saldo).isEqualTo(0.0)
+    }
 }

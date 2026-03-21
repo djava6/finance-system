@@ -102,4 +102,41 @@ class ContaControllerIT : IntegrationTestBase() {
         val response = restTemplate.getForEntity("/contas", String::class.java)
         assertThat(response.statusCode).isEqualTo(HttpStatus.UNAUTHORIZED)
     }
+
+    @Test
+    fun listar_shouldNotReturnOtherUsersContas() {
+        val otherToken = "mock-other-conta-token"
+        val otherFirebaseToken = mock(FirebaseToken::class.java)
+        `when`(otherFirebaseToken.uid).thenReturn("uid-other-conta")
+        `when`(otherFirebaseToken.email).thenReturn("other.conta.isolation@it.com")
+        `when`(otherFirebaseToken.name).thenReturn("Other Conta User")
+        `when`(firebaseAuth.verifyIdToken(eq(otherToken))).thenReturn(otherFirebaseToken)
+        val otherHeaders = HttpHeaders().apply { setBearerAuth(otherToken) }
+
+        restTemplate.postForEntity("/contas", HttpEntity(mapOf("nome" to "Other Secret Conta", "saldo" to 9999.0), otherHeaders), ContaResponse::class.java)
+
+        val response = restTemplate.exchange("/contas", HttpMethod.GET, HttpEntity<Any>(authHeaders()), Array<ContaResponse>::class.java)
+        assertThat(response.body!!.none { it.nome == "Other Secret Conta" }).isTrue()
+    }
+
+    @Test
+    fun atualizar_shouldReturn4xxWhenContaBelongsToAnotherUser() {
+        val otherToken = "mock-other-conta-token2"
+        val otherFirebaseToken = mock(FirebaseToken::class.java)
+        `when`(otherFirebaseToken.uid).thenReturn("uid-other-conta2")
+        `when`(otherFirebaseToken.email).thenReturn("other.conta2.isolation@it.com")
+        `when`(otherFirebaseToken.name).thenReturn("Other Conta User 2")
+        `when`(firebaseAuth.verifyIdToken(eq(otherToken))).thenReturn(otherFirebaseToken)
+        val otherHeaders = HttpHeaders().apply { setBearerAuth(otherToken) }
+
+        val created = restTemplate.postForEntity("/contas", HttpEntity(mapOf("nome" to "Other Conta Protected", "saldo" to 100.0), otherHeaders), ContaResponse::class.java)
+        val otherId = created.body!!.id
+
+        val response = restTemplate.exchange(
+            "/contas/$otherId", HttpMethod.PUT,
+            HttpEntity(mapOf("nome" to "Hacked", "saldo" to 0.0), authHeaders()),
+            String::class.java
+        )
+        assertThat(response.statusCode.is4xxClientError).isTrue()
+    }
 }

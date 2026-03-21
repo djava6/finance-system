@@ -93,4 +93,25 @@ class ContaServiceTest {
             .isInstanceOf(IllegalArgumentException::class.java)
             .hasMessageContaining("Conta não encontrada")
     }
+
+    @Test
+    fun criar_shouldAllowZeroSaldo() {
+        val usuario = usuarioMock()
+        val saved = Conta().apply { id = 1L; nome = "Zerada"; saldo = 0.0; this.usuario = usuario }
+        `when`(contaRepository.save(any())).thenReturn(saved)
+
+        val response = contaService.criar(ContaRequest(nome = "Zerada", saldo = 0.0), usuario)
+        assertThat(response.saldo).isEqualTo(0.0)
+    }
+
+    @Test
+    fun atualizar_shouldAllowNegativeSaldo() {
+        val usuario = usuarioMock()
+        val existing = Conta().apply { id = 1L; nome = "Antiga"; saldo = 100.0 }
+        `when`(contaRepository.findByIdAndUsuario(1L, usuario)).thenReturn(Optional.of(existing))
+        `when`(contaRepository.save(any())).thenAnswer { it.getArgument(0) }
+
+        val response = contaService.atualizar(1L, ContaRequest(nome = "Antiga", saldo = -50.0), usuario)
+        assertThat(response.saldo).isEqualTo(-50.0)
+    }
 }
