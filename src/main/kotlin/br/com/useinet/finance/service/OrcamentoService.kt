@@ -19,9 +19,11 @@ class OrcamentoService(
     private val notificationService: NotificationService
 ) {
 
+    @Transactional(readOnly = true)
     fun listar(usuario: Usuario): List<OrcamentoResponse> =
         orcamentoRepository.findByUsuario(usuario).map { toResponse(it, usuario) }
 
+    @Transactional(readOnly = true)
     fun listarPorMes(usuario: Usuario, mes: Int, ano: Int): List<OrcamentoResponse> =
         orcamentoRepository.findByUsuarioAndMesAndAno(usuario, mes, ano).map { toResponse(it, usuario) }
 

@@ -15,6 +15,7 @@ class MetaService(
     private val notificationService: NotificationService
 ) {
 
+    @Transactional(readOnly = true)
     fun listar(usuario: Usuario): List<MetaResponse> =
         metaRepository.findByUsuario(usuario).map { MetaResponse.from(it) }
 
