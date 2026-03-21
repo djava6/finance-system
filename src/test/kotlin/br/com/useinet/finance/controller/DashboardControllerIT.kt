@@ -138,8 +138,9 @@ class DashboardControllerIT : IntegrationTestBase() {
         val response = restTemplate.exchange("/dashboard", HttpMethod.GET, HttpEntity<Any>(authHeaders()), DashboardResponse::class.java)
         assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
         assertThat(response.body!!.evolucaoMensal).isNotEmpty()
+        // @BeforeEach cleans up this user, so only the 2 transactions above contribute
         val currentEntry = response.body!!.evolucaoMensal[0]
-        assertThat(currentEntry.totalReceitas).isGreaterThan(0.0)
-        assertThat(currentEntry.totalDespesas).isGreaterThan(0.0)
+        assertThat(currentEntry.totalReceitas).isEqualTo(4000.0)
+        assertThat(currentEntry.totalDespesas).isEqualTo(1000.0)
     }
 }

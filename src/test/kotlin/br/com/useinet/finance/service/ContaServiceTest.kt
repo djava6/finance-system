@@ -95,7 +95,7 @@ class ContaServiceTest {
     }
 
     @Test
-    fun criar_shouldAllowZeroSaldo() {
+    fun criar_shouldPersistZeroSaldo() {
         val usuario = usuarioMock()
         val saved = Conta().apply { id = 1L; nome = "Zerada"; saldo = 0.0; this.usuario = usuario }
         `when`(contaRepository.save(any())).thenReturn(saved)
@@ -105,7 +105,7 @@ class ContaServiceTest {
     }
 
     @Test
-    fun atualizar_shouldAllowNegativeSaldo() {
+    fun atualizar_shouldPersistNegativeSaldo() {
         val usuario = usuarioMock()
         val existing = Conta().apply { id = 1L; nome = "Antiga"; saldo = 100.0 }
         `when`(contaRepository.findByIdAndUsuario(1L, usuario)).thenReturn(Optional.of(existing))

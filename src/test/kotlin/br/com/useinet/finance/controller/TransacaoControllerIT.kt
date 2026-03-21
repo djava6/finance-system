@@ -105,7 +105,11 @@ class TransacaoControllerIT : IntegrationTestBase() {
         val response = restTemplate.exchange("/transactions?inicio=2020-01-01&fim=2099-12-31", HttpMethod.GET, HttpEntity<Any>(authHeaders()), String::class.java)
         assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
         val page = jacksonObjectMapper().readValue<Map<String, Any>>(response.body!!)
-        assertThat(page["content"]).isNotNull
+        // content must be a list and must include the transaction just created
+        val content = page["content"] as List<*>
+        assertThat(content).isNotEmpty
+        val body = jacksonObjectMapper().writeValueAsString(content)
+        assertThat(body).contains("Filtrado")
     }
 
     @Test
@@ -128,7 +132,9 @@ class TransacaoControllerIT : IntegrationTestBase() {
         restTemplate.exchange("/transactions", HttpMethod.POST, HttpEntity(mapOf("descricao" to "CSV Conta", "valor" to 100.0, "tipo" to "DESPESA"), authHeaders()), TransacaoResponse::class.java)
         val response = restTemplate.exchange("/transactions/export/csv", HttpMethod.GET, HttpEntity<Any>(authHeaders()), ByteArray::class.java)
         val csv = String(response.body!!, StandardCharsets.UTF_8)
-        assertThat(csv).contains("Conta")
+        // verify the full column header structure, not just the presence of "Conta"
+        assertThat(csv).contains("ID,Descrição,Valor,Tipo,Data,Categoria,Conta,Saldo da Conta")
+        assertThat(csv).contains("CSV Conta")
     }
 
     @Test
@@ -159,6 +165,7 @@ class TransacaoControllerIT : IntegrationTestBase() {
         val content = page["content"] as List<*>
         assertThat(content).hasSize(2)
         assertThat((page["totalElements"] as Number).toInt()).isGreaterThanOrEqualTo(5)
+        assertThat((page["totalPages"] as Number).toInt()).isGreaterThanOrEqualTo(3)
     }
 
     @Test

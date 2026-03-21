@@ -11,6 +11,7 @@ import br.com.useinet.finance.repository.ContaRepository
 import br.com.useinet.finance.repository.TransacaoRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.assertj.core.api.Assertions.within
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.ArgumentMatchers.any
@@ -23,14 +24,12 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.mockito.Mockito.`when`
 import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.whenever
-import org.mockito.quality.Strictness
 import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
 import java.util.Optional
 
 @ExtendWith(MockitoExtension::class)
-@MockitoSettings(strictness = Strictness.LENIENT)
 class TransacaoServiceTest {
 
     @Mock lateinit var transacaoRepository: TransacaoRepository
@@ -56,11 +55,16 @@ class TransacaoServiceTest {
     @Test
     fun criar_shouldSetDataNowWhenNotProvided() {
         val request = TransacaoRequest(descricao = "Mercado", valor = 150.0, tipo = TipoTransacao.DESPESA)
-        val saved = Transacao().apply { descricao = "Mercado"; valor = 150.0; tipo = TipoTransacao.DESPESA; data = LocalDateTime.now() }
-        `when`(transacaoRepository.save(any())).thenReturn(saved)
+        val captured = mutableListOf<Transacao>()
+        `when`(transacaoRepository.save(any())).thenAnswer { inv ->
+            val t = inv.getArgument<Transacao>(0)
+            captured.add(t)
+            t
+        }
 
-        val response = transacaoService.criar(request, usuarioMock())
-        assertThat(response.data).isNotNull
+        transacaoService.criar(request, usuarioMock())
+        assertThat(captured[0].data).isNotNull
+        assertThat(captured[0].data!!).isCloseTo(LocalDateTime.now(), within(5, ChronoUnit.SECONDS))
     }
 
     @Test
@@ -207,8 +211,15 @@ class TransacaoServiceTest {
     }
 
     @Test
-    fun criar_shouldThrowWhenValorIsZeroOrNegative() {
+    fun criar_shouldThrowWhenValorIsNegative() {
         assertThatThrownBy { transacaoService.criar(TransacaoRequest(descricao = "Test", valor = -1.0, tipo = TipoTransacao.DESPESA), usuarioMock()) }
+            .isInstanceOf(IllegalArgumentException::class.java)
+            .hasMessageContaining("Valor da transação deve ser maior que zero")
+    }
+
+    @Test
+    fun criar_shouldThrowWhenValorIsZero() {
+        assertThatThrownBy { transacaoService.criar(TransacaoRequest(descricao = "Test", valor = 0.0, tipo = TipoTransacao.DESPESA), usuarioMock()) }
             .isInstanceOf(IllegalArgumentException::class.java)
             .hasMessageContaining("Valor da transação deve ser maior que zero")
     }

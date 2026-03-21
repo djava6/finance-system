@@ -266,6 +266,40 @@ class CsvExportTest {
     }
 
     @Test
+    fun importarCsv_shouldAcceptLowercaseTipo() {
+        val usuario = usuarioMock()
+        `when`(transacaoRepository.existsByUsuarioAndDataAndValorAndDescricao(any(), any(), any(), any())).thenReturn(false)
+        `when`(transacaoRepository.save(any())).thenAnswer { it.getArgument(0) }
+
+        // service calls .uppercase() on tipo, so lowercase should parse fine
+        val file = csv("2025-01-15,Salário,5000.0,receita,")
+        val result = transacaoService.importarCsv(file, usuario)
+
+        assertThat(result.importadas).isEqualTo(1)
+        assertThat(result.erros).isEqualTo(0)
+    }
+
+    @Test
+    fun importarCsv_shouldSaveWithoutCategoryWhenNotFoundInDb() {
+        val usuario = usuarioMock()
+        `when`(transacaoRepository.existsByUsuarioAndDataAndValorAndDescricao(any(), any(), any(), any())).thenReturn(false)
+        `when`(categoriaRepository.findByNome("Inexistente")).thenReturn(Optional.empty())
+        val saved = mutableListOf<Transacao>()
+        `when`(transacaoRepository.save(any())).thenAnswer { inv ->
+            val t = inv.getArgument<Transacao>(0)
+            saved.add(t)
+            t
+        }
+
+        val file = csv("2025-01-20,Mercado,200.0,DESPESA,Inexistente")
+        val result = transacaoService.importarCsv(file, usuario)
+
+        assertThat(result.importadas).isEqualTo(1)
+        assertThat(result.erros).isEqualTo(0)
+        assertThat(saved[0].categoria).isNull()
+    }
+
+    @Test
     fun importarCsv_shouldIgnoreBlankCategoryColumn() {
         val usuario = usuarioMock()
         `when`(transacaoRepository.existsByUsuarioAndDataAndValorAndDescricao(any(), any(), any(), any())).thenReturn(false)

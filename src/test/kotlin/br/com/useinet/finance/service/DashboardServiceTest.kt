@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.InjectMocks
 import org.mockito.Mock
+import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
 import org.mockito.junit.jupiter.MockitoExtension
 import java.time.LocalDateTime
@@ -38,6 +39,9 @@ class DashboardServiceTest {
         assertThat(response.totalReceitas).isEqualTo(5000.0)
         assertThat(response.totalDespesas).isEqualTo(1500.0)
         assertThat(response.saldo).isEqualTo(3500.0)
+        verify(transacaoRepository).sumValorByUsuarioAndTipo(usuario, TipoTransacao.RECEITA)
+        verify(transacaoRepository).sumValorByUsuarioAndTipo(usuario, TipoTransacao.DESPESA)
+        verify(contaRepository).findByUsuario(usuario)
     }
 
     @Test
