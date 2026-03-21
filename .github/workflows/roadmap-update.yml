@@ -71,7 +71,8 @@ jobs:
             });
 
             let body = roadmap.body;
-            const pattern = new RegExp(`- \\[[ ]\\] (🔄 )?#${issueNum}\\b`);
+            // Casa "- [ ] #N" com ou sem emoji/prefixo entre o checkbox e o #
+            const pattern = new RegExp(`- \\[ \\][^#]*#${issueNum}\\b`);
             if (!pattern.test(body)) return;
 
             body = body.replace(pattern, `- [x] #${issueNum}`);
