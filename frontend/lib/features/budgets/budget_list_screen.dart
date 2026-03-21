@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../../core/models/categoria_model.dart';
 import '../../core/models/orcamento_model.dart';
+import '../../core/services/categoria_service.dart';
 import '../../core/services/orcamento_service.dart';
 
 class BudgetListScreen extends StatefulWidget {
@@ -74,44 +76,78 @@ class _BudgetListScreenState extends State<BudgetListScreen> {
     }
   }
 
-  void _showAddDialog() {
+  Future<void> _showAddDialog() async {
+    List<CategoriaModel> categorias = [];
+    try {
+      categorias = await CategoriaService().listar();
+    } catch (_) {}
+
+    if (!mounted) return;
+
     final limiteCtrl = TextEditingController();
-    showDialog(
+    CategoriaModel? selectedCategoria;
+
+    await showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Novo orçamento'),
-        content: TextField(
-          controller: limiteCtrl,
-          keyboardType:
-              const TextInputType.numberWithOptions(decimal: true),
-          decoration:
-              const InputDecoration(labelText: 'Valor limite (R\$)'),
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancelar')),
-          TextButton(
-            onPressed: () async {
-              final valor = double.tryParse(
-                  limiteCtrl.text.replaceAll(',', '.'));
-              if (valor == null || valor <= 0) return;
-              Navigator.pop(ctx);
-              try {
-                await _service.criar(
-                    valorLimite: valor, mes: _mes, ano: _ano);
-                _load();
-              } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('$e')),
-                  );
-                }
-              }
-            },
-            child: const Text('Salvar'),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('Novo orçamento'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButtonFormField<CategoriaModel?>(
+                value: selectedCategoria,
+                decoration: const InputDecoration(labelText: 'Categoria'),
+                items: [
+                  const DropdownMenuItem(
+                      value: null, child: Text('Sem categoria')),
+                  ...categorias.map((c) => DropdownMenuItem(
+                        value: c,
+                        child: Text(c.nome),
+                      )),
+                ],
+                onChanged: (c) => setDialogState(() => selectedCategoria = c),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: limiteCtrl,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration:
+                    const InputDecoration(labelText: 'Valor limite (R\$)'),
+              ),
+            ],
           ),
-        ],
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancelar')),
+            TextButton(
+              onPressed: () async {
+                final valor = double.tryParse(
+                    limiteCtrl.text.replaceAll(',', '.'));
+                if (valor == null || valor <= 0) return;
+                Navigator.pop(ctx);
+                try {
+                  await _service.criar(
+                    categoriaId: selectedCategoria?.id,
+                    valorLimite: valor,
+                    mes: _mes,
+                    ano: _ano,
+                  );
+                  _load();
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('$e')),
+                    );
+                  }
+                }
+              },
+              child: const Text('Salvar'),
+            ),
+          ],
+        ),
       ),
     );
   }
