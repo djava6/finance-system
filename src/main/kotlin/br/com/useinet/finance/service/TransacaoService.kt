@@ -27,7 +27,8 @@ import kotlin.math.abs
 class TransacaoService(
     private val transacaoRepository: TransacaoRepository,
     private val categoriaRepository: CategoriaRepository,
-    private val contaRepository: ContaRepository
+    private val contaRepository: ContaRepository,
+    private val orcamentoService: OrcamentoService
 ) {
 
     @Transactional
@@ -54,7 +55,12 @@ class TransacaoService(
             contaRepository.save(conta)
         }
 
-        return TransacaoResponse.from(transacaoRepository.save(transacao))
+        val saved = transacaoRepository.save(transacao)
+        if (transacao.tipo == TipoTransacao.DESPESA) {
+            val dt = transacao.data!!
+            orcamentoService.checkAlerts(usuario, dt.monthValue, dt.year)
+        }
+        return TransacaoResponse.from(saved)
     }
 
     @Transactional(readOnly = true)

@@ -63,6 +63,33 @@ interface TransacaoRepository : JpaRepository<Transacao, Long> {
     ): List<Transacao>
 
     @Query("""
+        SELECT COALESCE(SUM(t.valor), 0) FROM Transacao t
+        WHERE t.usuario = :usuario
+          AND t.tipo = br.com.useinet.finance.model.TipoTransacao.DESPESA
+          AND t.categoria = :categoria
+          AND t.data >= :inicio AND t.data < :fim
+    """)
+    fun sumDespesasByCategoriaAndPeriod(
+        @Param("usuario") usuario: Usuario,
+        @Param("categoria") categoria: Categoria,
+        @Param("inicio") inicio: LocalDateTime,
+        @Param("fim") fim: LocalDateTime
+    ): Double
+
+    @Query("""
+        SELECT COALESCE(SUM(t.valor), 0) FROM Transacao t
+        WHERE t.usuario = :usuario
+          AND t.tipo = br.com.useinet.finance.model.TipoTransacao.DESPESA
+          AND t.categoria IS NULL
+          AND t.data >= :inicio AND t.data < :fim
+    """)
+    fun sumDespesasSemCategoriaAndPeriod(
+        @Param("usuario") usuario: Usuario,
+        @Param("inicio") inicio: LocalDateTime,
+        @Param("fim") fim: LocalDateTime
+    ): Double
+
+    @Query("""
         SELECT new br.com.useinet.finance.dto.EvolucaoMensalResponse(
             YEAR(t.data), MONTH(t.data),
             SUM(CASE WHEN t.tipo = br.com.useinet.finance.model.TipoTransacao.RECEITA THEN t.valor ELSE 0.0 END),

@@ -9,6 +9,7 @@ import br.com.useinet.finance.model.Usuario
 import br.com.useinet.finance.repository.CategoriaRepository
 import br.com.useinet.finance.repository.ContaRepository
 import br.com.useinet.finance.repository.TransacaoRepository
+import br.com.useinet.finance.service.OrcamentoService
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.assertj.core.api.Assertions.within
@@ -34,6 +35,7 @@ class TransacaoServiceTest {
     @Mock lateinit var transacaoRepository: TransacaoRepository
     @Mock lateinit var categoriaRepository: CategoriaRepository
     @Mock lateinit var contaRepository: ContaRepository
+    @Mock lateinit var orcamentoService: OrcamentoService
     @InjectMocks lateinit var transacaoService: TransacaoService
 
     private fun usuarioMock() = Usuario().apply { nome = "Carlos"; email = "carlos@email.com" }

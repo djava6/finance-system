@@ -2,9 +2,11 @@ import 'dart:convert';
 import 'dart:math';
 import 'package:crypto/crypto.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import '../services/api_client.dart';
+import '../services/user_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   User? _user;
@@ -20,11 +22,32 @@ class AuthProvider extends ChangeNotifier {
     _user = user;
     if (user != null) {
       _token = await user.getIdToken();
+      _registerFcmToken();
     } else {
       _token = null;
       _locked = false;
     }
     notifyListeners();
+  }
+
+  Future<void> _registerFcmToken() async {
+    if (kIsWeb) return;
+    try {
+      final messaging = FirebaseMessaging.instance;
+      final settings = await messaging.requestPermission();
+      if (settings.authorizationStatus == AuthorizationStatus.authorized ||
+          settings.authorizationStatus == AuthorizationStatus.provisional) {
+        final fcmToken = await messaging.getToken();
+        if (fcmToken != null) {
+          await UserService().registerFcmToken(fcmToken);
+        }
+        messaging.onTokenRefresh.listen((newToken) {
+          UserService().registerFcmToken(newToken);
+        });
+      }
+    } catch (_) {
+      // FCM registration is best-effort; do not interrupt login flow
+    }
   }
 
   User? get user => _user;

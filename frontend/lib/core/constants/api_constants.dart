@@ -10,5 +10,8 @@ class ApiConstants {
   static const String dashboard = '$baseUrl/dashboard';
   static const String categories = '$baseUrl/categories';
   static const String userMe = '$baseUrl/users/me';
+  static const String userFcmToken = '$baseUrl/users/fcm-token';
   static const String contas = '$baseUrl/contas';
+  static const String orcamentos = '$baseUrl/orcamentos';
+  static const String metas = '$baseUrl/metas';
 }

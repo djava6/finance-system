@@ -14,6 +14,13 @@ class UserService {
     throw Exception('Erro ao carregar perfil');
   }
 
+  Future<void> registerFcmToken(String token) async {
+    await _client.post(
+      Uri.parse(ApiConstants.userFcmToken),
+      body: jsonEncode({'token': token}),
+    );
+  }
+
   Future<UserProfileModel> updateProfile(String nome, String? email) async {
     final body = <String, String>{'nome': nome};
     if (email != null && email.isNotEmpty) body['email'] = email;

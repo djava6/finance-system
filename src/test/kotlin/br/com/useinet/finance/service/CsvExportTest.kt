@@ -31,6 +31,7 @@ class CsvExportTest {
     @Mock lateinit var transacaoRepository: TransacaoRepository
     @Mock lateinit var categoriaRepository: CategoriaRepository
     @Mock lateinit var contaRepository: ContaRepository
+    @Mock lateinit var orcamentoService: OrcamentoService
     @InjectMocks lateinit var transacaoService: TransacaoService
 
     private fun usuarioMock() = Usuario().apply { nome = "Carlos"; email = "carlos@email.com" }

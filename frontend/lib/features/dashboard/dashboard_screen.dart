@@ -6,7 +6,9 @@ import '../../core/models/dashboard_model.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/services/dashboard_service.dart';
 import '../accounts/account_list_screen.dart';
+import '../budgets/budget_list_screen.dart';
 import '../categories/category_list_screen.dart';
+import '../goals/goal_list_screen.dart';
 import '../profile/profile_screen.dart';
 import '../transactions/transaction_list_screen.dart';
 
@@ -28,6 +30,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     CategoryListScreen(),
     ProfileScreen(),
     AccountListScreen(),
+    BudgetListScreen(),
+    GoalListScreen(),
   ];
 
   @override
@@ -61,6 +65,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
               icon: Icon(Icons.account_balance_outlined),
               selectedIcon: Icon(Icons.account_balance),
               label: 'Contas'),
+          NavigationDestination(
+              icon: Icon(Icons.pie_chart_outline),
+              selectedIcon: Icon(Icons.pie_chart),
+              label: 'Orçamentos'),
+          NavigationDestination(
+              icon: Icon(Icons.flag_outlined),
+              selectedIcon: Icon(Icons.flag),
+              label: 'Metas'),
         ],
       ),
     );

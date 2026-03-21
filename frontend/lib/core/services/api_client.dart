@@ -29,6 +29,9 @@ class ApiClient {
   Future<http.Response> put(Uri uri, {required String body}) =>
       _execute((h) => http.put(uri, headers: h, body: body));
 
+  Future<http.Response> patch(Uri uri, {required String body}) =>
+      _execute((h) => http.patch(uri, headers: h, body: body));
+
   Future<http.Response> delete(Uri uri) =>
       _execute((h) => http.delete(uri, headers: h));
 

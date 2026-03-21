@@ -23,6 +23,9 @@ class Usuario : UserDetails {
     @Column(name = "provider_id", nullable = true)
     var providerId: String? = null
 
+    @Column(name = "fcm_token")
+    var fcmToken: String? = null
+
     override fun getAuthorities(): Collection<GrantedAuthority> = emptyList()
     override fun getPassword(): String? = null
     override fun getUsername(): String? = email

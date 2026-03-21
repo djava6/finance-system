@@ -1,5 +1,6 @@
 package br.com.useinet.finance.controller
 
+import br.com.useinet.finance.dto.FcmTokenRequest
 import br.com.useinet.finance.dto.UpdateProfileRequest
 import br.com.useinet.finance.dto.UserProfileResponse
 import br.com.useinet.finance.model.Usuario
@@ -43,5 +44,17 @@ class UserController(private val usuarioRepository: UsuarioRepository) {
             usuario.email = email
         }
         return ResponseEntity.ok(UserProfileResponse.from(usuarioRepository.save(usuario)))
+    }
+
+    @PostMapping("/fcm-token")
+    @Operation(summary = "Registrar FCM token", description = "Salva o token FCM do dispositivo para notificações push")
+    fun registrarFcmToken(
+        @AuthenticationPrincipal usuario: Usuario,
+        @RequestBody request: FcmTokenRequest
+    ): ResponseEntity<Void> {
+        if (request.token.isNullOrBlank()) throw IllegalArgumentException("FCM token é obrigatório.")
+        usuario.fcmToken = request.token.trim()
+        usuarioRepository.save(usuario)
+        return ResponseEntity.noContent().build()
     }
 }
