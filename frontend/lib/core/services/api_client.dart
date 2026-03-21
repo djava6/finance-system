@@ -32,6 +32,24 @@ class ApiClient {
   Future<http.Response> delete(Uri uri) =>
       _execute((h) => http.delete(uri, headers: h));
 
+  Future<http.Response> postMultipart(
+    Uri uri, {
+    required List<int> fileBytes,
+    required String fileName,
+    required String fieldName,
+  }) async {
+    final token = await FirebaseAuth.instance.currentUser?.getIdToken(false);
+    final request = http.MultipartRequest('POST', uri);
+    if (token != null) request.headers['Authorization'] = 'Bearer $token';
+    request.files.add(http.MultipartFile.fromBytes(
+      fieldName,
+      fileBytes,
+      filename: fileName,
+    ));
+    final streamed = await request.send().timeout(_timeout);
+    return http.Response.fromStream(streamed);
+  }
+
   Future<http.Response> _execute(
     Future<http.Response> Function(Map<String, String> headers) fn,
   ) async {

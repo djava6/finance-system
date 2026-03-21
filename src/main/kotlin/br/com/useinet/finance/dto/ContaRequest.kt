@@ -5,5 +5,7 @@ import jakarta.validation.constraints.NotBlank
 data class ContaRequest(
     @field:NotBlank(message = "Nome da conta é obrigatório.")
     val nome: String? = null,
-    val saldo: Double? = null
+    val saldo: Double? = null,
+    val numeroConta: String? = null,
+    val agencia: String? = null
 )

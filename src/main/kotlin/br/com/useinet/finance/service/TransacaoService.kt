@@ -1,5 +1,7 @@
 package br.com.useinet.finance.service
 
+import br.com.useinet.finance.dto.ImportResultResponse
+import br.com.useinet.finance.dto.PageResponse
 import br.com.useinet.finance.dto.TransacaoRequest
 import br.com.useinet.finance.dto.TransacaoResponse
 import br.com.useinet.finance.model.Conta
@@ -9,11 +11,17 @@ import br.com.useinet.finance.model.Usuario
 import br.com.useinet.finance.repository.CategoriaRepository
 import br.com.useinet.finance.repository.ContaRepository
 import br.com.useinet.finance.repository.TransacaoRepository
+import org.apache.commons.csv.CSVFormat
+import org.apache.commons.csv.CSVParser
+import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.web.multipart.MultipartFile
 import java.nio.charset.StandardCharsets
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import kotlin.math.abs
 
 @Service
 class TransacaoService(
@@ -50,12 +58,18 @@ class TransacaoService(
     }
 
     @Transactional(readOnly = true)
-    fun listar(usuario: Usuario, inicio: LocalDateTime?, fim: LocalDateTime?): List<TransacaoResponse> {
-        val transacoes = if (inicio != null && fim != null)
-            transacaoRepository.findByUsuarioAndDataBetweenOrderByDataDesc(usuario, inicio, fim)
+    fun listar(usuario: Usuario, inicio: LocalDateTime?, fim: LocalDateTime?, pageable: Pageable): PageResponse<TransacaoResponse> {
+        val page = if (inicio != null && fim != null)
+            transacaoRepository.findByUsuarioAndDataBetween(usuario, inicio, fim, pageable)
         else
-            transacaoRepository.findByUsuarioOrderByDataDesc(usuario)
-        return transacoes.map { TransacaoResponse.from(it) }
+            transacaoRepository.findByUsuario(usuario, pageable)
+        return PageResponse(
+            content = page.content.map { TransacaoResponse.from(it) },
+            page = page.number,
+            size = page.size,
+            totalElements = page.totalElements,
+            totalPages = page.totalPages
+        )
     }
 
     @Transactional
@@ -169,6 +183,59 @@ class TransacaoService(
         }
 
         return csv.toString().toByteArray(StandardCharsets.UTF_8)
+    }
+
+    @Transactional
+    fun importarCsv(file: MultipartFile, usuario: Usuario): ImportResultResponse {
+        val content = file.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+
+        val csvFormat = CSVFormat.DEFAULT.builder()
+            .setHeader("data", "descricao", "valor", "tipo", "categoria")
+            .setSkipHeaderRecord(true)
+            .setIgnoreEmptyLines(true)
+            .setTrim(true)
+            .build()
+
+        val records = CSVParser.parse(content, csvFormat)
+        var importadas = 0
+        var duplicatas = 0
+        val erros = mutableListOf<String>()
+
+        for ((index, row) in records.withIndex()) {
+            val linha = index + 2
+            try {
+                val descricao = row.get("descricao")
+                val valorRaw = row.get("valor").replace(",", ".").toDouble()
+                val valor = abs(valorRaw)
+                val tipo = TipoTransacao.valueOf(row.get("tipo").uppercase())
+                val data = LocalDate.parse(row.get("data")).atStartOfDay()
+
+                if (transacaoRepository.existsByUsuarioAndDataAndValorAndDescricao(usuario, data, valor, descricao)) {
+                    duplicatas++
+                    continue
+                }
+
+                val transacao = Transacao().apply {
+                    this.descricao = descricao
+                    this.valor = valor
+                    this.tipo = tipo
+                    this.data = data
+                    this.usuario = usuario
+                }
+
+                val categoriaStr = row.get("categoria")
+                if (categoriaStr.isNotBlank()) {
+                    categoriaRepository.findByNome(categoriaStr).ifPresent { transacao.categoria = it }
+                }
+
+                transacaoRepository.save(transacao)
+                importadas++
+            } catch (e: Exception) {
+                erros.add("Linha $linha: ${e.message}")
+            }
+        }
+
+        return ImportResultResponse(importadas, duplicatas, erros.size, erros)
     }
 
     private fun escapeCsv(value: String?): String {

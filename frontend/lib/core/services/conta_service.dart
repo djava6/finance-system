@@ -15,10 +15,17 @@ class ContaService {
     throw Exception('Erro ao carregar contas');
   }
 
-  Future<ContaModel> criar(String nome, double saldo) async {
+  Future<ContaModel> criar(String nome, double saldo,
+      {String? numeroConta, String? agencia}) async {
     final response = await _client.post(
       Uri.parse(ApiConstants.contas),
-      body: jsonEncode({'nome': nome, 'saldo': saldo}),
+      body: jsonEncode({
+        'nome': nome,
+        'saldo': saldo,
+        if (numeroConta != null && numeroConta.isNotEmpty)
+          'numeroConta': numeroConta,
+        if (agencia != null && agencia.isNotEmpty) 'agencia': agencia,
+      }),
     );
     if (response.statusCode == 201) {
       return ContaModel.fromJson(jsonDecode(response.body));
@@ -26,10 +33,17 @@ class ContaService {
     throw Exception(_extractError(response.body));
   }
 
-  Future<ContaModel> atualizar(int id, String nome, double saldo) async {
+  Future<ContaModel> atualizar(int id, String nome, double saldo,
+      {String? numeroConta, String? agencia}) async {
     final response = await _client.put(
       Uri.parse('${ApiConstants.contas}/$id'),
-      body: jsonEncode({'nome': nome, 'saldo': saldo}),
+      body: jsonEncode({
+        'nome': nome,
+        'saldo': saldo,
+        if (numeroConta != null && numeroConta.isNotEmpty)
+          'numeroConta': numeroConta,
+        if (agencia != null && agencia.isNotEmpty) 'agencia': agencia,
+      }),
     );
     if (response.statusCode == 200) {
       return ContaModel.fromJson(jsonDecode(response.body));

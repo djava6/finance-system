@@ -1,5 +1,7 @@
 package br.com.useinet.finance.controller
 
+import br.com.useinet.finance.dto.ImportResultResponse
+import br.com.useinet.finance.dto.PageResponse
 import br.com.useinet.finance.dto.TransacaoRequest
 import br.com.useinet.finance.dto.TransacaoResponse
 import br.com.useinet.finance.model.Usuario
@@ -8,6 +10,8 @@ import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
+import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Sort
 import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
@@ -15,6 +19,7 @@ import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.*
+import org.springframework.web.multipart.MultipartFile
 import java.time.LocalDate
 
 @RestController
@@ -32,12 +37,14 @@ class TransacaoController(private val transacaoService: TransacaoService) {
         ResponseEntity.status(HttpStatus.CREATED).body(transacaoService.criar(request, usuario))
 
     @GetMapping
-    @Operation(summary = "Listar transações", description = "Retorna transações do usuário. Filtro opcional por período (inicio/fim no formato yyyy-MM-dd)")
+    @Operation(summary = "Listar transações", description = "Retorna transações paginadas. Filtro opcional por período (inicio/fim no formato yyyy-MM-dd). Padrão: page=0, size=20.")
     fun listar(
         @AuthenticationPrincipal usuario: Usuario,
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) inicio: LocalDate?,
-        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) fim: LocalDate?
-    ): ResponseEntity<List<TransacaoResponse>> {
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) fim: LocalDate?,
+        @RequestParam(defaultValue = "0") page: Int,
+        @RequestParam(defaultValue = "20") size: Int
+    ): ResponseEntity<PageResponse<TransacaoResponse>> {
         val dtInicio = inicio?.atStartOfDay()
         val dtFim = fim?.atTime(23, 59, 59)
 
@@ -45,8 +52,17 @@ class TransacaoController(private val transacaoService: TransacaoService) {
             throw IllegalArgumentException("Data inicial deve ser anterior à data final.")
         }
 
-        return ResponseEntity.ok(transacaoService.listar(usuario, dtInicio, dtFim))
+        val pageable = PageRequest.of(page, size, Sort.by("data").descending())
+        return ResponseEntity.ok(transacaoService.listar(usuario, dtInicio, dtFim, pageable))
     }
+
+    @PostMapping("/import", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
+    @Operation(summary = "Importar CSV", description = "Importa transações de um arquivo CSV. Formato esperado: data,descricao,valor,tipo,categoria")
+    fun importarCsv(
+        @RequestParam("file") file: MultipartFile,
+        @AuthenticationPrincipal usuario: Usuario
+    ): ResponseEntity<ImportResultResponse> =
+        ResponseEntity.ok(transacaoService.importarCsv(file, usuario))
 
     @PutMapping("/{id}")
     @Operation(summary = "Editar transação", description = "Atualiza descrição, valor, tipo, categoria de uma transação do usuário")

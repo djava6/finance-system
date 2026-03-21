@@ -42,45 +42,67 @@ class _AccountListScreenState extends State<AccountListScreen> {
     final nomeController = TextEditingController(text: conta?.nome ?? '');
     final saldoController = TextEditingController(
         text: conta != null ? conta.saldo.toStringAsFixed(2) : '');
+    final numeroContaController =
+        TextEditingController(text: conta?.numeroConta ?? '');
+    final agenciaController =
+        TextEditingController(text: conta?.agencia ?? '');
     final formKey = GlobalKey<FormState>();
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(conta == null ? 'Nova conta' : 'Editar conta'),
-        content: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: nomeController,
-                decoration: const InputDecoration(
-                  labelText: 'Nome',
-                  border: OutlineInputBorder(),
+        content: SingleChildScrollView(
+          child: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: nomeController,
+                  decoration: const InputDecoration(
+                    labelText: 'Nome',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (v) =>
+                      v == null || v.isEmpty ? 'Informe o nome' : null,
+                  autofocus: true,
                 ),
-                validator: (v) =>
-                    v == null || v.isEmpty ? 'Informe o nome' : null,
-                autofocus: true,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: saldoController,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(
-                  labelText: 'Saldo inicial (R\$)',
-                  border: OutlineInputBorder(),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: saldoController,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(
+                    labelText: 'Saldo inicial (R\$)',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (v) {
+                    if (v == null || v.isEmpty) return 'Informe o saldo';
+                    if (double.tryParse(v.replaceAll(',', '.')) == null) {
+                      return 'Valor inválido';
+                    }
+                    return null;
+                  },
                 ),
-                validator: (v) {
-                  if (v == null || v.isEmpty) return 'Informe o saldo';
-                  if (double.tryParse(v.replaceAll(',', '.')) == null) {
-                    return 'Valor inválido';
-                  }
-                  return null;
-                },
-              ),
-            ],
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: numeroContaController,
+                  decoration: const InputDecoration(
+                    labelText: 'Número da conta (opcional)',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: agenciaController,
+                  decoration: const InputDecoration(
+                    labelText: 'Agência (opcional)',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
         actions: [
@@ -102,11 +124,17 @@ class _AccountListScreenState extends State<AccountListScreen> {
       final nome = nomeController.text.trim();
       final saldo =
           double.parse(saldoController.text.replaceAll(',', '.'));
+      final numeroConta = numeroContaController.text.trim();
+      final agencia = agenciaController.text.trim();
       try {
         if (conta == null) {
-          await _service.criar(nome, saldo);
+          await _service.criar(nome, saldo,
+              numeroConta: numeroConta.isEmpty ? null : numeroConta,
+              agencia: agencia.isEmpty ? null : agencia);
         } else {
-          await _service.atualizar(conta.id, nome, saldo);
+          await _service.atualizar(conta.id, nome, saldo,
+              numeroConta: numeroConta.isEmpty ? null : numeroConta,
+              agencia: agencia.isEmpty ? null : agencia);
         }
         await _load();
       } catch (e) {
@@ -210,13 +238,29 @@ class _AccountListScreenState extends State<AccountListScreen> {
                                       Icon(Icons.account_balance_outlined),
                                 ),
                                 title: Text(c.nome),
-                                subtitle: Text(_currency.format(c.saldo),
-                                    style: TextStyle(
-                                      color: c.saldo >= 0
-                                          ? Colors.green
-                                          : Colors.red,
-                                      fontWeight: FontWeight.bold,
-                                    )),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(_currency.format(c.saldo),
+                                        style: TextStyle(
+                                          color: c.saldo >= 0
+                                              ? Colors.green
+                                              : Colors.red,
+                                          fontWeight: FontWeight.bold,
+                                        )),
+                                    if (c.numeroConta != null ||
+                                        c.agencia != null)
+                                      Text(
+                                        [
+                                          if (c.agencia != null)
+                                            'Ag: ${c.agencia}',
+                                          if (c.numeroConta != null)
+                                            'Cc: ${c.numeroConta}',
+                                        ].join('  '),
+                                        style: const TextStyle(fontSize: 12),
+                                      ),
+                                  ],
+                                ),
                                 trailing: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
