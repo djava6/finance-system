@@ -1,7 +1,7 @@
 package br.com.useinet.finance.controller
 
 import br.com.useinet.finance.dto.ContaResponse
-import com.google.firebase.auth.FirebaseAuth
+import br.com.useinet.finance.support.IntegrationTestBase
 import com.google.firebase.auth.FirebaseToken
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -10,18 +10,12 @@ import org.mockito.Mockito.eq
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.`when`
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.boot.test.web.client.TestRestTemplate
 import org.springframework.http.*
-import org.springframework.jdbc.core.JdbcTemplate
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class ContaControllerIT {
+class ContaControllerIT : IntegrationTestBase() {
 
     @Autowired lateinit var restTemplate: TestRestTemplate
-    @Autowired lateinit var jdbcTemplate: JdbcTemplate
-    @MockBean lateinit var firebaseAuth: FirebaseAuth
 
     companion object {
         const val MOCK_TOKEN = "mock-firebase-token"

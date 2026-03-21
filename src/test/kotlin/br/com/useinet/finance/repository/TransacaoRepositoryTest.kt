@@ -4,21 +4,17 @@ import br.com.useinet.finance.model.Categoria
 import br.com.useinet.finance.model.TipoTransacao
 import br.com.useinet.finance.model.Transacao
 import br.com.useinet.finance.model.Usuario
-import com.google.firebase.auth.FirebaseAuth
+import br.com.useinet.finance.support.IntegrationTestBase
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 
-@SpringBootTest
 @Transactional
-class TransacaoRepositoryTest {
+class TransacaoRepositoryTest : IntegrationTestBase() {
 
-    @MockBean lateinit var firebaseAuth: FirebaseAuth
     @Autowired lateinit var transacaoRepository: TransacaoRepository
     @Autowired lateinit var usuarioRepository: UsuarioRepository
     @Autowired lateinit var categoriaRepository: CategoriaRepository
