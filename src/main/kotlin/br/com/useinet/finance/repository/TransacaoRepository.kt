@@ -6,6 +6,8 @@ import br.com.useinet.finance.model.Categoria
 import br.com.useinet.finance.model.TipoTransacao
 import br.com.useinet.finance.model.Transacao
 import br.com.useinet.finance.model.Usuario
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
@@ -15,6 +17,22 @@ import java.util.Optional
 interface TransacaoRepository : JpaRepository<Transacao, Long> {
 
     fun findByUsuarioOrderByDataDesc(usuario: Usuario): List<Transacao>
+
+    fun findByUsuario(usuario: Usuario, pageable: Pageable): Page<Transacao>
+
+    fun findByUsuarioAndDataBetween(
+        usuario: Usuario,
+        inicio: LocalDateTime,
+        fim: LocalDateTime,
+        pageable: Pageable
+    ): Page<Transacao>
+
+    fun existsByUsuarioAndDataAndValorAndDescricao(
+        usuario: Usuario,
+        data: LocalDateTime,
+        valor: Double,
+        descricao: String
+    ): Boolean
 
     fun findTop10ByUsuarioOrderByDataDesc(usuario: Usuario): List<Transacao>
 

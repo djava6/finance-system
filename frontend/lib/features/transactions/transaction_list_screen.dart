@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -16,8 +17,14 @@ class TransactionListScreen extends StatefulWidget {
 
 class _TransactionListScreenState extends State<TransactionListScreen> {
   final _service = TransactionService();
+  final _scrollController = ScrollController();
+
   List<TransactionModel> _transactions = [];
   bool _loading = true;
+  bool _loadingMore = false;
+  bool _hasMore = true;
+  int _currentPage = 0;
+
   DateTime? _filterInicio;
   DateTime? _filterFim;
 
@@ -25,17 +32,51 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
       NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
   final _dateFormat = DateFormat('dd/MM/yyyy');
 
+  static const _pageSize = 20;
+
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
     _load();
   }
 
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 200 &&
+        !_loadingMore &&
+        _hasMore) {
+      _loadMore();
+    }
+  }
+
   Future<void> _load() async {
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _transactions = [];
+      _currentPage = 0;
+      _hasMore = true;
+    });
     try {
-      _transactions = await _service.listar(
-          inicio: _filterInicio, fim: _filterFim);
+      final result = await _service.listar(
+        inicio: _filterInicio,
+        fim: _filterFim,
+        page: 0,
+        size: _pageSize,
+      );
+      if (mounted) {
+        setState(() {
+          _transactions = result.content;
+          _hasMore = result.page + 1 < result.totalPages;
+          _currentPage = result.page;
+        });
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -44,6 +85,29 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
       }
     } finally {
       if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _loadMore() async {
+    if (!_hasMore || _loadingMore) return;
+    setState(() => _loadingMore = true);
+    try {
+      final result = await _service.listar(
+        inicio: _filterInicio,
+        fim: _filterFim,
+        page: _currentPage + 1,
+        size: _pageSize,
+      );
+      if (mounted) {
+        setState(() {
+          _transactions.addAll(result.content);
+          _currentPage = result.page;
+          _hasMore = result.page + 1 < result.totalPages;
+        });
+      }
+    } catch (_) {
+    } finally {
+      if (mounted) setState(() => _loadingMore = false);
     }
   }
 
@@ -83,6 +147,44 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('CSV exportado com sucesso')),
         );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+        );
+      }
+    }
+  }
+
+  Future<void> _importarCsv() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['csv'],
+      withData: true,
+    );
+    if (result == null || result.files.isEmpty) return;
+
+    final file = result.files.first;
+    if (file.bytes == null) return;
+
+    try {
+      final summary = await _service.importarCsv(
+        file.bytes!.toList(),
+        file.name,
+      );
+      await FirebaseAnalytics.instance.logEvent(name: 'importar_csv');
+      if (mounted) {
+        final importadas = summary['importadas'] ?? 0;
+        final duplicatas = summary['duplicatas'] ?? 0;
+        final erros = summary['erros'] ?? 0;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+                '$importadas importadas, $duplicatas duplicatas, $erros erros'),
+          ),
+        );
+        if (importadas > 0) _load();
       }
     } catch (e) {
       if (mounted) {
@@ -142,6 +244,11 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
             onPressed: _pickDateRange,
           ),
           IconButton(
+            icon: const Icon(Icons.upload_outlined),
+            tooltip: 'Importar CSV',
+            onPressed: _importarCsv,
+          ),
+          IconButton(
             icon: const Icon(Icons.download_outlined),
             tooltip: 'Exportar CSV',
             onPressed: _exportarCsv,
@@ -184,9 +291,16 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                     : RefreshIndicator(
                         onRefresh: _load,
                         child: ListView.builder(
+                          controller: _scrollController,
                           padding: const EdgeInsets.only(bottom: 80),
-                          itemCount: _transactions.length,
+                          itemCount: _transactions.length + (_hasMore ? 1 : 0),
                           itemBuilder: (_, i) {
+                            if (i == _transactions.length) {
+                              return const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 16),
+                                child: Center(child: CircularProgressIndicator()),
+                              );
+                            }
                             final t = _transactions[i];
                             return Dismissible(
                               key: Key('t_${t.id}'),
