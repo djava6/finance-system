@@ -18,6 +18,9 @@ import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.Mockito.doReturn
 import org.mockito.Mockito.verify
+import org.springframework.data.domain.PageImpl
+import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Sort
 import org.mockito.Mockito.`when`
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -147,11 +150,12 @@ class TransacaoServiceTest {
     fun listar_shouldReturnTransacoesDoUsuario() {
         val usuario = usuarioMock()
         val t = Transacao().apply { descricao = "Salário"; valor = 5000.0; tipo = TipoTransacao.RECEITA; data = LocalDateTime.now() }
-        `when`(transacaoRepository.findByUsuarioOrderByDataDesc(usuario)).thenReturn(listOf(t))
+        val pageable = PageRequest.of(0, 20, Sort.by("data").descending())
+        `when`(transacaoRepository.findByUsuario(usuario, pageable)).thenReturn(PageImpl(listOf(t)))
 
-        val result = transacaoService.listar(usuario, null, null)
-        assertThat(result).hasSize(1)
-        assertThat(result[0].descricao).isEqualTo("Salário")
+        val result = transacaoService.listar(usuario, null, null, pageable)
+        assertThat(result.content).hasSize(1)
+        assertThat(result.content[0].descricao).isEqualTo("Salário")
     }
 
     @Test
