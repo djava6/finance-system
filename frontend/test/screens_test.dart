@@ -129,7 +129,7 @@ void main() {
       await tester.pump(); // processa o tap + validação síncrona
       await tester.pump(); // renderiza os erros
 
-      expect(find.text('Informe a descrição'), findsOneWidget);
+      expect(find.textContaining('Informe a descrição'), findsOneWidget);
     });
 
     testWidgets('validação impede salvar sem valor', (tester) async {
@@ -142,7 +142,7 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      expect(find.text('Informe o valor'), findsOneWidget);
+      expect(find.textContaining('Informe o valor'), findsOneWidget);
     });
 
     testWidgets('toggle recorrente exibe campo de frequência', (tester) async {

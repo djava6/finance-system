@@ -12,6 +12,11 @@ MockClient createMockHttpClient() {
           headers: {'content-type': 'application/json'});
     }
 
+    if (path.endsWith('/transactions') && request.method == 'POST') {
+      return http.Response(novaTransacaoJson, 201,
+          headers: {'content-type': 'application/json'});
+    }
+
     if (path.endsWith('/transactions') || path.contains('/transactions?')) {
       return http.Response(transacoesJson, 200,
           headers: {'content-type': 'application/json'});
@@ -28,11 +33,6 @@ MockClient createMockHttpClient() {
 
     if (path.endsWith('/contas') || path.endsWith('/accounts')) {
       return http.Response(contasJson, 200,
-          headers: {'content-type': 'application/json'});
-    }
-
-    if (path.endsWith('/transactions') && request.method == 'POST') {
-      return http.Response(novaTransacaoJson, 201,
           headers: {'content-type': 'application/json'});
     }
 
