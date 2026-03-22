@@ -19,7 +19,7 @@ class BigQueryExportFunction : HttpFunction {
 
     private val projectId  = "finance-app-489504"
     private val instance   = "finance-db"
-    private val database   = "finance"
+    private val database   = "finance_app"
     private val bucket     = "gs://finance-exports-489504"
     private val dataset    = "finance_analytics"
 
