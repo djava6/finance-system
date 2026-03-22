@@ -18,8 +18,8 @@ class BillingAlertFunction : BackgroundFunction<BillingAlertFunction.PubSubMessa
 
     data class PubSubMessage(val data: String? = null)
 
-    private val projectId = "finance-app-489504"
-    private val instanceName = "finance-db"
+    private val projectId = System.getenv("GCP_PROJECT_ID") ?: "finance-app-489504"
+    private val instanceName = System.getenv("CLOUD_SQL_INSTANCE") ?: "finance-db"
     private val cloudSqlInstance = "$projectId:us-central1:$instanceName"
     private val jdbcUrl = "jdbc:postgresql:///finance" +
         "?cloudSqlInstance=$cloudSqlInstance" +

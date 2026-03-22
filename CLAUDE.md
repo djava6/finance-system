@@ -47,21 +47,21 @@ Flyway migrations run automatically on startup from `src/main/resources/db/migra
 
 - **`config/`** — Spring Security, Firebase Admin SDK setup, OpenAPI (Swagger at `/swagger-ui/index.html`)
 - **`security/`** — `FirebaseAuthenticationFilter` validates every request's Firebase token against Firebase Admin SDK (Application Default Credentials)
-- **`controller/`** — 5 REST controllers: `Transacao`, `Dashboard`, `Conta`, `Categoria`, `User`
-- **`service/`** — Business logic; `DashboardService` aggregates monthly summaries; `CsvExportService` handles exports
-- **`model/`** + **`repository/`** — JPA entities and Spring Data repos (PostgreSQL)
+- **`controller/`** — 8 REST controllers: `Transacao`, `Dashboard`, `Conta`, `Categoria`, `User`, `Orcamento`, `Meta`, `BillingEvent`
+- **`service/`** — Business logic; `DashboardService` aggregates monthly summaries; `TransacaoService` handles CSV/XLSX exports and recurring transaction scheduler; `NotificationService` sends FCM push notifications
+- **`model/`** + **`repository/`** — JPA entities and Spring Data repos (PostgreSQL); enums: `TipoTransacao`, `FrequenciaRecorrencia`
 
 **Active Spring profile:** `prod` in Cloud Run (uses GCP Secret Manager for DB credentials), default for local dev (uses `application.properties`).
 
 ### Database Schema
 
-Core tables (created via Flyway V1–V14): `usuarios`, `categorias`, `contas`, `transacoes`, `billing_events`.
-Adding a new table = new `V{N}__description.sql` migration file.
+Core tables (created via Flyway V1–V19): `usuarios`, `categorias`, `contas`, `transacoes`, `billing_events`, `orcamentos`, `metas`.
+Adding a new table = new `V{N}__description.sql` migration file (next: `V20__...sql`).
 
 ### Frontend (`frontend/lib/`)
 
 - **`core/`** — HTTP client, base models, providers, utility services
-- **`features/`** — Modular screens (transactions, dashboard, categories, accounts, profile)
+- **`features/`** — Modular screens (transactions, dashboard, categories, accounts, profile, budgets/orcamentos, goals/metas)
 - **State management**: Provider
 - **Auth**: Firebase Auth SDK (token auto-refreshed, see commit `a47a73b`)
 - **Dark mode**: follows system preference
@@ -93,7 +93,7 @@ Docker image is tagged with git SHA + `latest`, pushed to Artifact Registry.
 
 - **Authentication**: All endpoints are protected by `FirebaseAuthenticationFilter`. Never add password-based or JWT auth.
 - **New API endpoint**: Add controller → service → repository. Follow existing patterns in `TransacaoController`.
-- **Database changes**: Always via Flyway migration. Increment version number (`V15__...sql`).
+- **Database changes**: Always via Flyway migration. Increment version number (next: `V20__...sql`).
 - **Secrets**: Use GCP Secret Manager in prod profile. Never hardcode credentials.
 - **GitHub Projects board**: When starting an issue, move card to "In Progress"; when done, move to "Done" (automated via `project-automation.yml`, but verify manually if needed).
 - **Tests**: Use Testcontainers (PostgreSQL) for integration tests. No mocking the database.

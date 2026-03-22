@@ -36,6 +36,9 @@ build/
 
 ### Mac OS ###
 .DS_Store
+._*
+.AppleDouble
+.LSOverride
 
 ### Environment ###
 .env

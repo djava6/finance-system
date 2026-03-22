@@ -11,7 +11,7 @@ Sistema de controle financeiro pessoal com backend Spring Boot e frontend Flutte
 ## Pré-requisitos
 
 - Java 21+
-- Maven 3.9+
+- Gradle 8.x+ (bundled via `./gradlew`, não precisa instalar)
 - Docker & Docker Compose
 - Flutter 3.19+
 - PostgreSQL 16 (ou Docker)
@@ -43,7 +43,7 @@ docker compose up db -d
 ### 3. Rodar o backend
 
 ```bash
-mvn spring-boot:run
+./gradlew bootRun
 ```
 
 O servidor inicia em `http://localhost:8080`.
@@ -52,7 +52,7 @@ Swagger UI: `http://localhost:8080/swagger-ui/index.html`
 ### 4. Rodar testes
 
 ```bash
-mvn test
+./gradlew test
 ```
 
 Os testes de integração sobem um PostgreSQL real via Testcontainers (requer Docker rodando).
@@ -91,10 +91,15 @@ Autenticação usa Firebase Admin SDK com ADC — sem secrets adicionais.
 | PUT | `/transactions/{id}` | Editar transação |
 | DELETE | `/transactions/{id}` | Excluir transação |
 | GET | `/transactions/export/csv` | Exportar CSV |
+| GET | `/transactions/export/xlsx` | Exportar Excel (.xlsx) |
+| POST | `/transactions/import` | Importar CSV |
 | GET | `/dashboard` | Resumo financeiro + evolução mensal |
 | GET/POST/PUT/DELETE | `/categories` | CRUD categorias |
 | GET/POST/PUT/DELETE | `/contas` | CRUD contas bancárias |
+| GET/POST/PUT/DELETE | `/orcamentos` | Orçamentos mensais com alertas |
+| GET/POST/PUT/DELETE | `/metas` | Metas financeiras |
 | GET/PUT | `/users/me` | Perfil do usuário |
+| GET | `/billing-events` | Eventos de billing GCP |
 
 ## Deploy (GCP Cloud Run)
 
@@ -111,22 +116,23 @@ Secrets necessários no GitHub:
 ```
 finance-system/
 ├── src/
-│   ├── main/java/br/com/useinet/finance/
-│   │   ├── config/          # SecurityConfig, FirebaseConfig, OpenApiConfig, GlobalExceptionHandler
-│   │   ├── controller/      # TransacaoController, DashboardController...
+│   ├── main/kotlin/br/com/useinet/finance/
+│   │   ├── config/          # SecurityConfig, FirebaseConfig, OpenApiConfig, GlobalExceptionHandler, AesAttributeConverter
+│   │   ├── controller/      # Transacao, Dashboard, Conta, Categoria, User, Orcamento, Meta, BillingEvent
 │   │   ├── dto/             # Request/Response DTOs
-│   │   ├── model/           # Entidades JPA
+│   │   ├── model/           # Entidades JPA + enums (TipoTransacao, FrequenciaRecorrencia)
 │   │   ├── repository/      # Spring Data JPA repositories
-│   │   ├── security/        # FirebaseAuthenticationFilter
-│   │   └── service/         # Regras de negócio (incl. FirebaseUserService)
+│   │   ├── security/        # FirebaseAuthenticationFilter, RateLimitFilter
+│   │   └── service/         # Regras de negócio + NotificationService + scheduler de recorrências
 │   └── resources/
-│       ├── db/migration/    # Scripts Flyway V1–V11
+│       ├── db/migration/    # Scripts Flyway V1–V19
 │       ├── application.properties
 │       ├── application-prod.properties
 │       └── logback-spring.xml
-├── frontend/                # Flutter app
-├── monitoring/              # dashboard.json, alerts.json
+├── billing-alert-function/  # Cloud Function (Kotlin) para alertas de billing GCP
+├── frontend/                # Flutter app (iOS/Android/Web)
+├── monitoring/              # dashboard.json, alerts.json (Cloud Monitoring)
 ├── Dockerfile
 ├── docker-compose.yml
-└── .github/workflows/       # CI/CD pipelines
+└── .github/workflows/       # CI/CD pipelines (7 workflows)
 ```

@@ -17,8 +17,11 @@ class OpenApiConfig {
     }
 
     @Bean
-    fun openAPI(): OpenAPI = OpenAPI()
-        .addServersItem(Server().url("https://finance-system-zv4dye6hcq-uc.a.run.app").description("Produção (Cloud Run)"))
+    fun openAPI(): OpenAPI {
+        val prodUrl = System.getenv("SWAGGER_SERVER_URL")
+            ?: "https://finance-system-zv4dye6hcq-uc.a.run.app"
+        return OpenAPI()
+        .addServersItem(Server().url(prodUrl).description("Produção (Cloud Run)"))
         .addServersItem(Server().url("http://localhost:8080").description("Local"))
         .info(
             Info()
@@ -41,4 +44,5 @@ class OpenApiConfig {
                     .bearerFormat("Firebase ID Token")
             )
         )
+    }
 }
