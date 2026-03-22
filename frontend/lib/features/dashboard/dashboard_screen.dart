@@ -96,7 +96,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 // ── Home tab (dashboard content) ─────────────────────────────────────────────
 
 class _HomeTab extends StatefulWidget {
-  const _HomeTab();
+  const _HomeTab({super.key});
 
   @override
   State<_HomeTab> createState() => _HomeTabState();
