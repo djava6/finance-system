@@ -27,36 +27,45 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0;
-  late final List<Key> _tabKeys;
+
+  // Tabs são construídas na primeira visita e reconstruídas a cada visita
+  // subsequente (dados frescos), mas nunca pré-carregadas.
+  late final List<Widget?> _tabCache = List.filled(7, null);
+
+  Widget _buildTab(int index) {
+    final key = UniqueKey();
+    switch (index) {
+      case 0: return _HomeTab(key: key);
+      case 1: return TransactionListScreen(key: key);
+      case 2: return CategoryListScreen(key: key);
+      case 3: return ProfileScreen(key: key);
+      case 4: return AccountListScreen(key: key);
+      case 5: return BudgetListScreen(key: key);
+      default: return GoalListScreen(key: key);
+    }
+  }
 
   @override
   void initState() {
     super.initState();
-    _tabKeys = List.generate(7, (_) => UniqueKey());
+    _tabCache[0] = _buildTab(0); // apenas a aba inicial
   }
-
-  List<Widget> get _tabs => [
-    _HomeTab(key: _tabKeys[0]),
-    TransactionListScreen(key: _tabKeys[1]),
-    CategoryListScreen(key: _tabKeys[2]),
-    ProfileScreen(key: _tabKeys[3]),
-    AccountListScreen(key: _tabKeys[4]),
-    BudgetListScreen(key: _tabKeys[5]),
-    GoalListScreen(key: _tabKeys[6]),
-  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: IndexedStack(
         index: _selectedIndex,
-        children: _tabs,
+        children: List.generate(
+          7,
+          (i) => _tabCache[i] ?? const SizedBox.shrink(),
+        ),
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: (i) => setState(() {
           _selectedIndex = i;
-          _tabKeys[i] = UniqueKey(); // força rebuild só desta aba
+          _tabCache[i] = _buildTab(i); // reconstrói só a aba selecionada
         }),
         destinations: const [
           NavigationDestination(
