@@ -124,10 +124,12 @@ void main() {
       await tester.pumpWidget(_screen(const AddTransactionScreen()));
       await tester.pumpAndSettle();
 
-      // Toca Salvar sem preencher
+      // O botão pode estar fora da viewport (SingleChildScrollView)
+      await tester.ensureVisible(find.text('Salvar'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Salvar'));
-      await tester.pump(); // processa o tap + validação síncrona
-      await tester.pump(); // renderiza os erros
+      await tester.pump();
+      await tester.pump();
 
       expect(find.textContaining('Informe a descrição'), findsOneWidget);
     });
@@ -138,6 +140,8 @@ void main() {
 
       await tester.enterText(
           find.widgetWithText(TextFormField, 'Descrição'), 'Teste');
+      await tester.ensureVisible(find.text('Salvar'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Salvar'));
       await tester.pump();
       await tester.pump();
@@ -159,13 +163,33 @@ void main() {
     });
 
     testWidgets('submit válido cria transação', (tester) async {
-      await tester.pumpWidget(_screen(const AddTransactionScreen()));
+      // Envolve com rota anterior para que Navigator.pop funcione
+      await tester.pumpWidget(
+        ChangeNotifierProvider<AuthProvider>(
+          create: (_) => MockAuthProvider(),
+          child: MaterialApp(
+            home: Builder(
+              builder: (ctx) => TextButton(
+                onPressed: () => Navigator.push(
+                  ctx,
+                  MaterialPageRoute(
+                      builder: (_) => const AddTransactionScreen()),
+                ),
+                child: const Text('Abrir'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Abrir'));
       await tester.pumpAndSettle();
 
       await tester.enterText(
           find.widgetWithText(TextFormField, 'Descrição'), 'Teste E2E');
       await tester.enterText(
           find.widgetWithText(TextFormField, 'Valor (R\$)'), '100.00');
+      await tester.ensureVisible(find.text('Salvar'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Salvar'));
       await tester.pumpAndSettle();
 
