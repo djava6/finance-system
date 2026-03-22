@@ -114,6 +114,36 @@ class ContaControllerIT : IntegrationTestBase() {
     }
 
     @Test
+    fun criar_comSaldoPositivo_shouldCriarTransacaoSaldoInicial() {
+        restTemplate.postForEntity(
+            "/contas",
+            HttpEntity(mapOf("nome" to "Carteira", "saldo" to 500.0), authHeaders()),
+            ContaResponse::class.java
+        )
+        val transacoes = restTemplate.exchange("/transactions", HttpMethod.GET, HttpEntity<Any>(authHeaders()), String::class.java)
+        assertThat(transacoes.body).contains("Saldo inicial")
+        assertThat(transacoes.body).contains("Carteira")
+    }
+
+    @Test
+    fun atualizar_shouldNotOverwriteSaldo() {
+        val created = restTemplate.postForEntity(
+            "/contas",
+            HttpEntity(mapOf("nome" to "Poupança Saldo", "saldo" to 300.0), authHeaders()),
+            ContaResponse::class.java
+        )
+        val id = created.body!!.id
+        restTemplate.exchange(
+            "/contas/$id", HttpMethod.PUT,
+            HttpEntity(mapOf("nome" to "Poupança Saldo", "saldo" to 999.0), authHeaders()),
+            ContaResponse::class.java
+        )
+        val contas = restTemplate.exchange("/contas", HttpMethod.GET, HttpEntity<Any>(authHeaders()), Array<ContaResponse>::class.java)
+        val conta = contas.body!!.first { it.id == id }
+        assertThat(conta.saldo).isEqualTo(300.0) // saldo não deve ser sobrescrito pelo PUT
+    }
+
+    @Test
     fun atualizar_shouldReturn4xxWhenContaBelongsToAnotherUser() {
         val otherToken = "mock-other-conta-token2"
         val otherFirebaseToken = mock(FirebaseToken::class.java)

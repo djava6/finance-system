@@ -163,6 +163,34 @@ class TransacaoControllerIT : IntegrationTestBase() {
     }
 
     @Test
+    fun exportarCsv_shouldShowRunningBalancePerTransaction() {
+        // Conta com saldo=0 para não gerar transação de saldo inicial
+        val contaResp = restTemplate.postForEntity(
+            "/contas",
+            HttpEntity(mapOf("nome" to "ExtratoIT", "saldo" to 0.0), authHeaders()),
+            Map::class.java
+        )
+        val contaId = (contaResp.body!!["id"] as Number).toInt()
+
+        restTemplate.exchange("/transactions", HttpMethod.POST,
+            HttpEntity(mapOf("descricao" to "Entrada", "valor" to 1000.0, "tipo" to "RECEITA", "contaId" to contaId), authHeaders()),
+            TransacaoResponse::class.java)
+        restTemplate.exchange("/transactions", HttpMethod.POST,
+            HttpEntity(mapOf("descricao" to "Saida", "valor" to 300.0, "tipo" to "DESPESA", "contaId" to contaId), authHeaders()),
+            TransacaoResponse::class.java)
+
+        val csv = String(
+            restTemplate.exchange("/transactions/export/csv", HttpMethod.GET, HttpEntity<Any>(authHeaders()), ByteArray::class.java).body!!,
+            StandardCharsets.UTF_8
+        )
+
+        // Saldo acumulado após RECEITA 1000 = 1000, após DESPESA 300 = 700
+        assertThat(csv).contains("ExtratoIT;1000,00")
+        assertThat(csv).contains("ExtratoIT;700,00")
+        assertThat(csv).doesNotContain("ExtratoIT;1300,00") // saldo atual incorreto
+    }
+
+    @Test
     fun listar_shouldNotReturnOtherUsersTransacoes() {
         val otherToken = "mock-other-transacao-token"
         val otherFirebaseToken = mock(FirebaseToken::class.java)
