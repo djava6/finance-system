@@ -234,6 +234,7 @@ class TransacaoService(
         val colTipo      = colName("Tipo", "tipo") ?: "Tipo"
         val colData      = colName("Data", "data") ?: "Data"
         val colCategoria = colName("Categoria", "categoria") ?: "Categoria"
+        val colConta     = colName("Conta", "conta")
 
         var importadas = 0
         var duplicatas = 0
@@ -280,6 +281,17 @@ class TransacaoService(
                 val categoriaStr = try { row.get(colCategoria) } catch (_: Exception) { "" }
                 if (categoriaStr.isNotBlank()) {
                     categoriaRepository.findByNome(categoriaStr).ifPresent { transacao.categoria = it }
+                }
+
+                if (colConta != null) {
+                    val contaStr = try { row.get(colConta) } catch (_: Exception) { "" }
+                    if (contaStr.isNotBlank()) {
+                        contaRepository.findByNomeAndUsuario(contaStr, usuario).ifPresent { conta ->
+                            transacao.conta = conta
+                            ajustarSaldo(conta, tipo, valor)
+                            contaRepository.save(conta)
+                        }
+                    }
                 }
 
                 transacaoRepository.save(transacao)

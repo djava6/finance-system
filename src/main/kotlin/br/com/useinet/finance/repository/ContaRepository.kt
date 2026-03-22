@@ -8,4 +8,5 @@ import java.util.Optional
 interface ContaRepository : JpaRepository<Conta, Long> {
     fun findByUsuario(usuario: Usuario): List<Conta>
     fun findByIdAndUsuario(id: Long, usuario: Usuario): Optional<Conta>
+    fun findByNomeAndUsuario(nome: String, usuario: Usuario): Optional<Conta>
 }
