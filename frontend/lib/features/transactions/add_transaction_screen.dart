@@ -79,10 +79,12 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       if (_pendingRecibo != null) {
         await _reciboService.uploadFileAndSave(_pendingRecibo!, transacao.id);
       }
-      await FirebaseAnalytics.instance.logEvent(
-        name: 'criar_transacao',
-        parameters: {'tipo': _tipo.toLowerCase()},
-      );
+      try {
+        await FirebaseAnalytics.instance.logEvent(
+          name: 'criar_transacao',
+          parameters: {'tipo': _tipo.toLowerCase()},
+        );
+      } catch (_) {}
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
       if (mounted) {

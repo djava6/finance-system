@@ -126,7 +126,8 @@ void main() {
 
       // Toca Salvar sem preencher
       await tester.tap(find.text('Salvar'));
-      await tester.pumpAndSettle();
+      await tester.pump(); // processa o tap + validação síncrona
+      await tester.pump(); // renderiza os erros
 
       expect(find.text('Informe a descrição'), findsOneWidget);
     });
@@ -138,7 +139,8 @@ void main() {
       await tester.enterText(
           find.widgetWithText(TextFormField, 'Descrição'), 'Teste');
       await tester.tap(find.text('Salvar'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump();
 
       expect(find.text('Informe o valor'), findsOneWidget);
     });
