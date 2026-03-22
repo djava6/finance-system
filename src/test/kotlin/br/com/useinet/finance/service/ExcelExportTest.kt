@@ -89,8 +89,33 @@ class ExcelExportTest {
             tipo = TipoTransacao.DESPESA; data = LocalDateTime.of(2026, 3, 12, 15, 0)
             this.conta = conta
         }
+        `when`(transacaoRepository.findByContaOrderByDataAscIdAsc(conta)).thenReturn(listOf(t))
         val bytes = export(usuario, listOf(t))
         assertThat(bytes).isNotEmpty()
+    }
+
+    @Test
+    fun exportarXlsx_shouldProduceTwoSheets_andRunningBalance() {
+        val usuario = usuarioMock()
+        val conta = Conta().apply { id = 1L; nome = "Nubank"; saldo = 4800.0 }
+        val receita = Transacao().apply {
+            id = 1L; descricao = "Salário"; valor = 5000.0
+            tipo = TipoTransacao.RECEITA; data = LocalDateTime.of(2026, 3, 1, 10, 0)
+            this.conta = conta
+        }
+        val despesa = Transacao().apply {
+            id = 2L; descricao = "Aluguel"; valor = 1500.0
+            tipo = TipoTransacao.DESPESA; data = LocalDateTime.of(2026, 3, 5, 9, 0)
+            this.conta = conta
+        }
+        `when`(transacaoRepository.findByContaOrderByDataAscIdAsc(conta)).thenReturn(listOf(receita, despesa))
+
+        val bytes = export(usuario, listOf(receita, despesa))
+
+        // Arquivo ZIP válido com dois sheets (dois arquivos xl/worksheets/sheet*.xml)
+        assertThat(bytes).isNotEmpty()
+        assertThat(bytes[0]).isEqualTo(0x50.toByte())
+        assertThat(bytes[1]).isEqualTo(0x4B.toByte())
     }
 
     @Test

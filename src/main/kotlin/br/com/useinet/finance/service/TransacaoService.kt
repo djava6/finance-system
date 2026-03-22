@@ -232,31 +232,153 @@ class TransacaoService(
         else
             transacaoRepository.findByUsuarioOrderByDataAscIdAsc(usuario)
 
+        val totalReceitas = transacoes.filter { it.tipo == TipoTransacao.RECEITA }.sumOf { it.valor ?: 0.0 }
+        val totalDespesas = transacoes.filter { it.tipo == TipoTransacao.DESPESA }.sumOf { it.valor ?: 0.0 }
+        val resultado = totalReceitas - totalDespesas
+        val periodo = if (inicio != null && fim != null)
+            "${inicio.format(fmtDate)} a ${fim.format(fmtDate)}"
+        else "Todas as transações"
+
+        // Saldo acumulado por conta — mesma lógica do CSV
+        val saldoAposTransacao: Map<Long, Double> = transacoes
+            .mapNotNull { it.conta }
+            .distinctBy { it.id }
+            .flatMap { conta ->
+                var saldo = 0.0
+                transacaoRepository.findByContaOrderByDataAscIdAsc(conta).map { t ->
+                    saldo += if (t.tipo == TipoTransacao.RECEITA) t.valor!! else -(t.valor!!)
+                    t.id!! to saldo
+                }
+            }
+            .toMap()
+
+        val BLUE  = "E3F2FD"
+        val GRAY  = "EEEEEE"
+        val GREEN = "E8F5E9"
+        val RED   = "FFEBEE"
+        val CURRENCY = "#,##0.00"
+        val DATE_FMT = "dd/mm/yyyy"
+
         Workbook(outputStream, "Finance System", "1.0").use { wb ->
+
+            // ── Aba 1: Transações ──────────────────────────────────────────
             val ws = wb.newWorksheet("Transações")
 
-            // Cabeçalho
-            val headers = listOf("Data", "Descrição", "Tipo", "Categoria", "Conta", "Valor (R$)")
-            headers.forEachIndexed { col, h ->
-                ws.value(0, col, h)
-                ws.style(0, col).fillColor("EEEEEE").bold().set()
+            ws.width(0, 8.0)   // ID
+            ws.width(1, 14.0)  // Data
+            ws.width(2, 38.0)  // Descrição
+            ws.width(3, 12.0)  // Tipo
+            ws.width(4, 22.0)  // Categoria
+            ws.width(5, 22.0)  // Conta
+            ws.width(6, 15.0)  // Valor
+            ws.width(7, 18.0)  // Saldo da Conta
+
+            // Bloco de resumo (linhas 0–3)
+            listOf(
+                "Período:" to periodo,
+                "Total Receitas:" to totalReceitas,
+                "Total Despesas:" to totalDespesas,
+                "Resultado do período:" to resultado
+            ).forEachIndexed { row, (label, value) ->
+                ws.value(row, 0, label)
+                ws.style(row, 0).fillColor(BLUE).bold().set()
+                if (value is String) {
+                    ws.value(row, 1, value)
+                    ws.style(row, 1).fillColor(BLUE).set()
+                } else {
+                    ws.value(row, 1, (value as Double))
+                    ws.style(row, 1).fillColor(BLUE).format(CURRENCY).set()
+                }
             }
 
-            // Linhas de dados
+            // Linha 4: separador em branco
+            // Linha 5: cabeçalho
+            val HEADER_ROW = 5
+            listOf("ID", "Data", "Descrição", "Tipo", "Categoria", "Conta", "Valor (R$)", "Saldo da Conta")
+                .forEachIndexed { col, h ->
+                    ws.value(HEADER_ROW, col, h)
+                    ws.style(HEADER_ROW, col).fillColor(GRAY).bold().set()
+                }
+
+            // Linhas de dados (a partir da linha 6)
             transacoes.forEachIndexed { i, t ->
-                val row = i + 1
-                ws.value(row, 0, t.data?.format(fmtDate))
-                ws.value(row, 1, t.descricao)
-                ws.value(row, 2, if (t.tipo == TipoTransacao.RECEITA) "Receita" else "Despesa")
-                ws.value(row, 3, t.categoria?.nome ?: "Sem categoria")
-                ws.value(row, 4, t.conta?.nome ?: "")
-                ws.value(row, 5, t.valor)
+                val row = HEADER_ROW + 1 + i
+                val color = if (t.tipo == TipoTransacao.RECEITA) GREEN else RED
 
-                val color = if (t.tipo == TipoTransacao.RECEITA) "E8F5E9" else "FFEBEE"
-                for (col in 0..5) ws.style(row, col).fillColor(color).set()
+                ws.value(row, 0, t.id)
+                ws.style(row, 0).fillColor(color).set()
+
+                ws.value(row, 1, t.data?.toLocalDate())
+                ws.style(row, 1).fillColor(color).format(DATE_FMT).set()
+
+                ws.value(row, 2, t.descricao)
+                ws.style(row, 2).fillColor(color).set()
+
+                ws.value(row, 3, if (t.tipo == TipoTransacao.RECEITA) "Receita" else "Despesa")
+                ws.style(row, 3).fillColor(color).set()
+
+                ws.value(row, 4, t.categoria?.nome ?: "Sem categoria")
+                ws.style(row, 4).fillColor(color).set()
+
+                ws.value(row, 5, t.conta?.nome ?: "")
+                ws.style(row, 5).fillColor(color).set()
+
+                ws.value(row, 6, t.valor)
+                ws.style(row, 6).fillColor(color).format(CURRENCY).set()
+
+                val saldo = t.id?.let { saldoAposTransacao[it] }
+                if (saldo != null) {
+                    ws.value(row, 7, saldo)
+                    ws.style(row, 7).fillColor(color).format(CURRENCY).set()
+                } else {
+                    ws.style(row, 7).fillColor(color).set()
+                }
             }
 
-            ws.finish()
+            // Linha de totais
+            if (transacoes.isNotEmpty()) {
+                val totalsRow = HEADER_ROW + 1 + transacoes.size
+                ws.value(totalsRow, 0, "TOTAL")
+                for (col in 0..5) ws.style(totalsRow, col).fillColor(GRAY).bold().set()
+                ws.value(totalsRow, 6, resultado)
+                ws.style(totalsRow, 6).fillColor(GRAY).bold().format(CURRENCY).set()
+                ws.style(totalsRow, 7).fillColor(GRAY).bold().set()
+            }
+
+            // ── Aba 2: Resumo por Categoria ────────────────────────────────
+            val wsRes = wb.newWorksheet("Resumo")
+
+            wsRes.width(0, 28.0)
+            wsRes.width(1, 16.0)
+            wsRes.width(2, 16.0)
+
+            listOf("Categoria", "Despesas (R$)", "Receitas (R$)").forEachIndexed { col, h ->
+                wsRes.value(0, col, h)
+                wsRes.style(0, col).fillColor(GRAY).bold().set()
+            }
+
+            val porCategoria = transacoes
+                .groupBy { it.categoria?.nome ?: "Sem categoria" }
+                .entries.sortedBy { it.key }
+
+            porCategoria.forEachIndexed { i, (cat, trans) ->
+                val row = i + 1
+                val desp = trans.filter { it.tipo == TipoTransacao.DESPESA }.sumOf { it.valor ?: 0.0 }
+                val rec  = trans.filter { it.tipo == TipoTransacao.RECEITA }.sumOf { it.valor ?: 0.0 }
+                wsRes.value(row, 0, cat)
+                wsRes.value(row, 1, desp)
+                wsRes.style(row, 1).fillColor(RED).format(CURRENCY).set()
+                wsRes.value(row, 2, rec)
+                wsRes.style(row, 2).fillColor(GREEN).format(CURRENCY).set()
+            }
+
+            val totResRow = porCategoria.size + 1
+            wsRes.value(totResRow, 0, "TOTAL")
+            wsRes.style(totResRow, 0).fillColor(GRAY).bold().set()
+            wsRes.value(totResRow, 1, totalDespesas)
+            wsRes.style(totResRow, 1).fillColor(GRAY).bold().format(CURRENCY).set()
+            wsRes.value(totResRow, 2, totalReceitas)
+            wsRes.style(totResRow, 2).fillColor(GRAY).bold().format(CURRENCY).set()
         }
     }
 
