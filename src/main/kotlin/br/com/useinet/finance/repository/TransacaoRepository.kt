@@ -3,6 +3,7 @@ package br.com.useinet.finance.repository
 import br.com.useinet.finance.dto.DespesaPorCategoriaResponse
 import br.com.useinet.finance.dto.EvolucaoMensalResponse
 import br.com.useinet.finance.model.Categoria
+import br.com.useinet.finance.model.Conta
 import br.com.useinet.finance.model.TipoTransacao
 import br.com.useinet.finance.model.Transacao
 import br.com.useinet.finance.model.Usuario
@@ -61,6 +62,8 @@ interface TransacaoRepository : JpaRepository<Transacao, Long> {
         inicio: LocalDateTime,
         fim: LocalDateTime
     ): List<Transacao>
+
+    fun findByContaOrderByDataAsc(conta: Conta): List<Transacao>
 
     @Query("""
         SELECT COALESCE(SUM(t.valor), 0) FROM Transacao t

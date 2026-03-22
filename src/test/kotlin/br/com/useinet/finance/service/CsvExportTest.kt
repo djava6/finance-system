@@ -118,9 +118,12 @@ class CsvExportTest {
             this.conta = conta
         }
         `when`(transacaoRepository.findByUsuarioOrderByDataDesc(usuario)).thenReturn(listOf(t))
+        // saldo acumulado calculado pela soma das transações da conta (ASC), não pelo campo conta.saldo
+        `when`(transacaoRepository.findByContaOrderByDataAsc(conta)).thenReturn(listOf(t))
 
         val content = String(exportAll(usuario), StandardCharsets.UTF_8)
-        assertThat(content).contains("Nubank;1975,00")
+        // running balance após única RECEITA 1000,00 = 1000,00
+        assertThat(content).contains("Nubank;1000,00")
     }
 
     @Test

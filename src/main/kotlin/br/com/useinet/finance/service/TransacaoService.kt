@@ -174,10 +174,24 @@ class TransacaoService(
         csv.append("Saldo:;${fmtDecimal(saldo)}\n")
         csv.append("\n")
 
+        // Pré-calcula saldo acumulado após cada transação por conta (extrato)
+        // Busca TODAS as transações de cada conta para calcular saldo correto mesmo com filtro de período
+        val saldoAposTransacao: Map<Long, Double> = transacoes
+            .mapNotNull { it.conta }
+            .distinctBy { it.id }
+            .flatMap { conta ->
+                var saldo = 0.0
+                transacaoRepository.findByContaOrderByDataAsc(conta).map { t ->
+                    saldo += if (t.tipo == TipoTransacao.RECEITA) t.valor!! else -(t.valor!!)
+                    t.id!! to saldo
+                }
+            }
+            .toMap()
+
         // Cabeçalho
         csv.append("ID;Descrição;Valor;Tipo;Data;Categoria;Conta;\"Saldo da Conta\"\n")
 
-        // Linhas
+        // Linhas (mais recentes primeiro — DESC)
         transacoes.forEach { t ->
             val tipoLegivel = if (t.tipo == TipoTransacao.RECEITA) "Receita" else "Despesa"
             csv.append(t.id).append(';')
@@ -187,7 +201,7 @@ class TransacaoService(
                 .append(escapeCsvBr(requireNotNull(t.data).format(fmtDateTime))).append(';')
                 .append(t.categoria?.let { escapeCsvBr(it.nome) } ?: "").append(';')
                 .append(t.conta?.let { escapeCsvBr(it.nome) } ?: "").append(';')
-                .append(t.conta?.saldo?.let { fmtDecimal(it) } ?: "")
+                .append(t.id?.let { saldoAposTransacao[it]?.let { v -> fmtDecimal(v) } } ?: "")
                 .append('\n')
         }
 
