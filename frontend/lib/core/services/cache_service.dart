@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import '../models/dashboard_model.dart';
@@ -10,7 +11,8 @@ class CacheService {
   static const _ttlTransacoes = Duration(minutes: 30);
   static const _ttlDashboard  = Duration(minutes: 15);
 
-  Future<Database> get db async {
+  Future<Database?> get db async {
+    if (kIsWeb) return null;
     _db ??= await _open();
     return _db!;
   }
@@ -43,6 +45,7 @@ class CacheService {
 
   Future<void> saveTransacoes(List<TransactionModel> items) async {
     final d = await db;
+    if (d == null) return;
     final now = DateTime.now().millisecondsSinceEpoch;
     final batch = d.batch();
     batch.delete('cache_transacoes');
@@ -58,6 +61,7 @@ class CacheService {
 
   Future<(List<TransactionModel>, DateTime?)> getTransacoes() async {
     final d = await db;
+    if (d == null) return (<TransactionModel>[], null);
     final rows = await d.query('cache_transacoes', orderBy: 'id DESC');
     if (rows.isEmpty) return (<TransactionModel>[], null);
     final syncedAt = DateTime.fromMillisecondsSinceEpoch(
@@ -89,6 +93,7 @@ class CacheService {
 
   Future<void> _saveKv(String key, String value, Duration ttl) async {
     final d = await db;
+    if (d == null) return;
     await d.insert(
       'cache_kv',
       {'chave': key, 'valor': value, 'updated_at': DateTime.now().millisecondsSinceEpoch},
@@ -98,6 +103,7 @@ class CacheService {
 
   Future<(String, DateTime)?> _getKv(String key, Duration ttl) async {
     final d = await db;
+    if (d == null) return null;
     final rows = await d.query('cache_kv',
         where: 'chave = ?', whereArgs: [key]);
     if (rows.isEmpty) return null;
@@ -109,6 +115,7 @@ class CacheService {
 
   Future<void> clear() async {
     final d = await db;
+    if (d == null) return;
     await d.delete('cache_transacoes');
     await d.delete('cache_kv');
   }
