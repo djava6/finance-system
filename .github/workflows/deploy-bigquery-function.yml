@@ -1,0 +1,80 @@
+name: Deploy BigQuery Export Function
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'bigquery-export-function/**'
+
+jobs:
+  deploy:
+    name: Build & Deploy to Cloud Functions
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.2
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v5.2.0
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Build JAR
+        working-directory: bigquery-export-function
+        run: ./gradlew shadowJar --no-daemon
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v3.0.0
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+
+      - name: Setup gcloud CLI
+        uses: google-github-actions/setup-gcloud@v3.0.1
+
+      - name: Deploy Cloud Function
+        run: |
+          gcloud functions deploy bigquery-export \
+            --gen2 \
+            --runtime=java21 \
+            --region=${{ secrets.GCP_REGION }} \
+            --source=bigquery-export-function/build/libs \
+            --entry-point=br.com.useinet.finance.BigQueryExportFunction \
+            --trigger-http \
+            --allow-unauthenticated=false \
+            --service-account=finance-system-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com \
+            --memory=512Mi \
+            --timeout=540s \
+            --project=${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Create or update Cloud Scheduler job
+        run: |
+          FUNCTION_URL=$(gcloud functions describe bigquery-export \
+            --gen2 \
+            --region=${{ secrets.GCP_REGION }} \
+            --project=${{ secrets.GCP_PROJECT_ID }} \
+            --format="value(serviceConfig.uri)")
+
+          if gcloud scheduler jobs describe finance-bigquery-export-daily \
+              --location=${{ secrets.GCP_REGION }} \
+              --project=${{ secrets.GCP_PROJECT_ID }} &>/dev/null; then
+            gcloud scheduler jobs update http finance-bigquery-export-daily \
+              --location=${{ secrets.GCP_REGION }} \
+              --schedule="0 5 * * *" \
+              --uri="$FUNCTION_URL" \
+              --http-method=GET \
+              --oidc-service-account-email=finance-system-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com \
+              --time-zone="America/Sao_Paulo" \
+              --project=${{ secrets.GCP_PROJECT_ID }}
+          else
+            gcloud scheduler jobs create http finance-bigquery-export-daily \
+              --location=${{ secrets.GCP_REGION }} \
+              --schedule="0 5 * * *" \
+              --uri="$FUNCTION_URL" \
+              --http-method=GET \
+              --oidc-service-account-email=finance-system-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com \
+              --time-zone="America/Sao_Paulo" \
+              --project=${{ secrets.GCP_PROJECT_ID }}
+          fi
