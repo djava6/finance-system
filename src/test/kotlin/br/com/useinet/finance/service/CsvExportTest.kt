@@ -70,7 +70,7 @@ class CsvExportTest {
         `when`(transacaoRepository.findByUsuarioOrderByDataDesc(usuario)).thenReturn(emptyList())
 
         val content = String(exportAll(usuario), StandardCharsets.UTF_8)
-        assertThat(content).contains("ID;Descrição;Valor;Tipo;Data;Categoria;Conta;Saldo da Conta")
+        assertThat(content).contains("ID;Descrição;Valor;Tipo;Data;Categoria;Conta;\"Saldo da Conta\"")
         assertThat(content).doesNotContain("ID,")
     }
 

@@ -175,7 +175,7 @@ class TransacaoService(
         csv.append("\n")
 
         // Cabeçalho
-        csv.append("ID;Descrição;Valor;Tipo;Data;Categoria;Conta;Saldo da Conta\n")
+        csv.append("ID;Descrição;Valor;Tipo;Data;Categoria;Conta;\"Saldo da Conta\"\n")
 
         // Linhas
         transacoes.forEach { t ->
@@ -184,7 +184,7 @@ class TransacaoService(
                 .append(escapeCsvBr(t.descricao)).append(';')
                 .append(fmtDecimal(t.valor ?: 0.0)).append(';')
                 .append(tipoLegivel).append(';')
-                .append(requireNotNull(t.data).format(fmtDateTime)).append(';')
+                .append(escapeCsvBr(requireNotNull(t.data).format(fmtDateTime))).append(';')
                 .append(t.categoria?.let { escapeCsvBr(it.nome) } ?: "").append(';')
                 .append(t.conta?.let { escapeCsvBr(it.nome) } ?: "").append(';')
                 .append(t.conta?.saldo?.let { fmtDecimal(it) } ?: "")
@@ -294,7 +294,7 @@ class TransacaoService(
 
     private fun escapeCsvBr(value: String?): String {
         if (value == null) return ""
-        return if (value.contains(";") || value.contains("\"") || value.contains("\n"))
+        return if (value.contains(";") || value.contains("\"") || value.contains("\n") || value.contains(" "))
             "\"${value.replace("\"", "\"\"")}\""
         else value
     }
