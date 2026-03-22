@@ -5,6 +5,10 @@ import 'package:provider/provider.dart';
 import '../../core/models/dashboard_model.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/services/dashboard_service.dart';
+import '../../core/models/meta_model.dart';
+import '../../core/models/orcamento_model.dart';
+import '../../core/services/meta_service.dart';
+import '../../core/services/orcamento_service.dart';
 import '../accounts/account_list_screen.dart';
 import '../budgets/budget_list_screen.dart';
 import '../categories/category_list_screen.dart';
@@ -90,7 +94,12 @@ class _HomeTab extends StatefulWidget {
 
 class _HomeTabState extends State<_HomeTab> {
   final _service = DashboardService();
+  final _orcamentoService = OrcamentoService();
+  final _metaService = MetaService();
+
   DashboardModel? _data;
+  List<OrcamentoModel> _orcamentosAlerta = [];
+  List<MetaModel> _metasAndamento = [];
   bool _loading = true;
   bool _firstLoad = true;
 
@@ -118,7 +127,21 @@ class _HomeTabState extends State<_HomeTab> {
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
-      _data = await _service.getDashboard();
+      final now = DateTime.now();
+      final results = await Future.wait([
+        _service.getDashboard(),
+        _orcamentoService.listarPorMes(now.month, now.year).catchError((_) => <OrcamentoModel>[]),
+        _metaService.listar().catchError((_) => <MetaModel>[]),
+      ]);
+      if (mounted) {
+        _data = results[0] as DashboardModel;
+        _orcamentosAlerta = (results[1] as List<OrcamentoModel>)
+            .where((o) => o.percentual >= 80)
+            .toList();
+        _metasAndamento = (results[2] as List<MetaModel>)
+            .where((m) => !m.concluida)
+            .toList();
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -221,6 +244,93 @@ class _HomeTabState extends State<_HomeTab> {
               }).toList(),
             ),
           ),
+          const SizedBox(height: 20),
+        ],
+
+        // ── Orçamentos em alerta ─────────────────────
+        if (_orcamentosAlerta.isNotEmpty) ...[
+          Text('Orçamentos em alerta',
+              style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          ..._orcamentosAlerta.map((o) {
+            final pct = o.percentual.clamp(0.0, 100.0);
+            final color = o.percentual >= 100 ? Colors.red : Colors.orange;
+            return Card(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(o.categoria ?? 'Sem categoria',
+                            style: const TextStyle(fontWeight: FontWeight.bold)),
+                        Text('${pct.toStringAsFixed(0)}%',
+                            style: TextStyle(color: color, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    LinearProgressIndicator(
+                      value: pct / 100,
+                      color: color,
+                      backgroundColor: Colors.grey.shade200,
+                      minHeight: 6,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${_currency.format(o.gasto)} / ${_currency.format(o.valorLimite)}',
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
+          const SizedBox(height: 20),
+        ],
+
+        // ── Metas em andamento ────────────────────────
+        if (_metasAndamento.isNotEmpty) ...[
+          Text('Metas em andamento',
+              style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          ..._metasAndamento.map((m) {
+            final pct = m.percentual.clamp(0.0, 100.0);
+            return Card(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(m.nome ?? '',
+                              style: const TextStyle(fontWeight: FontWeight.bold)),
+                        ),
+                        Text('${pct.toStringAsFixed(0)}%',
+                            style: TextStyle(
+                                color: Theme.of(context).colorScheme.primary,
+                                fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    LinearProgressIndicator(
+                      value: pct / 100,
+                      minHeight: 6,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${_currency.format(m.valorAtual)} / ${_currency.format(m.valorAlvo)}',
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
           const SizedBox(height: 20),
         ],
 
