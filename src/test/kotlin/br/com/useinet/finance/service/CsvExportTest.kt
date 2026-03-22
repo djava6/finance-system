@@ -189,10 +189,25 @@ class CsvExportTest {
 
     // ─── importarCsv ──────────────────────────────────────────────────────────
 
+    /** Simple import format (no summary lines, positional headers) */
     private fun csv(vararg rows: String): MockMultipartFile {
         val header = "data,descricao,valor,tipo,categoria"
         val content = (listOf(header) + rows).joinToString("\n")
         return MockMultipartFile("file", "import.csv", "text/csv", content.toByteArray(Charsets.UTF_8))
+    }
+
+    /** Export-format CSV (BOM + summary lines + export column names + dd/MM/yyyy HH:mm dates) */
+    private fun exportCsv(vararg rows: String): MockMultipartFile {
+        val summary = listOf(
+            "\uFEFFPeríodo:,Todas as transações",
+            "Total Receitas:,\"1000.00\"",
+            "Total Despesas:,\"0.00\"",
+            "Saldo:,\"1000.00\"",
+            "",
+            "ID,Descrição,Valor,Tipo,Data,Categoria,Conta,Saldo da Conta"
+        )
+        val content = (summary + rows).joinToString("\n")
+        return MockMultipartFile("file", "export.csv", "text/csv", content.toByteArray(Charsets.UTF_8))
     }
 
     @Test
@@ -312,5 +327,58 @@ class CsvExportTest {
         assertThat(result.importadas).isEqualTo(1)
         // findByNome should NOT be called for blank category
         verify(categoriaRepository, never()).findByNome(any())
+    }
+
+    // ─── export → import round-trip ───────────────────────────────────────────
+
+    @Test
+    fun importarCsv_shouldImportExportFormatWithBomAndSummaryLines() {
+        val usuario = usuarioMock()
+        `when`(transacaoRepository.existsByUsuarioAndDataAndValorAndDescricao(any(), any(), any(), any())).thenReturn(false)
+        `when`(transacaoRepository.save(any())).thenAnswer { it.getArgument(0) }
+
+        // Rows in the export column order: ID,Descrição,Valor,Tipo,Data,Categoria,Conta,Saldo da Conta
+        val file = exportCsv(
+            "1,Salário,5000.00,Receita,15/03/2026 10:00,,Nubank,5000.00",
+            "2,Mercado,200.00,Despesa,15/03/2026 12:00,Alimentação,Nubank,4800.00"
+        )
+        val result = transacaoService.importarCsv(file, usuario)
+
+        assertThat(result.importadas).isEqualTo(2)
+        assertThat(result.duplicatas).isEqualTo(0)
+        assertThat(result.erros).isEqualTo(0)
+        assertThat(result.mensagensErro).isEmpty()
+    }
+
+    @Test
+    fun importarCsv_shouldSkipSummaryLinesAndNotCountThemAsErrors() {
+        val usuario = usuarioMock()
+        `when`(transacaoRepository.existsByUsuarioAndDataAndValorAndDescricao(any(), any(), any(), any())).thenReturn(false)
+        `when`(transacaoRepository.save(any())).thenAnswer { it.getArgument(0) }
+
+        val file = exportCsv("1,Pagamento,100.00,Despesa,20/03/2026 09:00,,Carteira,900.00")
+        val result = transacaoService.importarCsv(file, usuario)
+
+        assertThat(result.erros).isEqualTo(0)
+        assertThat(result.importadas).isEqualTo(1)
+    }
+
+    @Test
+    fun importarCsv_shouldParseDateInExportFormat() {
+        val usuario = usuarioMock()
+        val saved = mutableListOf<Transacao>()
+        `when`(transacaoRepository.existsByUsuarioAndDataAndValorAndDescricao(any(), any(), any(), any())).thenReturn(false)
+        `when`(transacaoRepository.save(any())).thenAnswer { inv ->
+            val t = inv.getArgument<Transacao>(0)
+            saved.add(t)
+            t
+        }
+
+        val file = exportCsv("3,Almoço,35.50,Despesa,21/03/2026 13:30,,Carteira,")
+        transacaoService.importarCsv(file, usuario)
+
+        assertThat(saved).hasSize(1)
+        assertThat(saved[0].data).isEqualTo(java.time.LocalDateTime.of(2026, 3, 21, 13, 30))
+        assertThat(saved[0].valor).isEqualTo(35.5)
     }
 }

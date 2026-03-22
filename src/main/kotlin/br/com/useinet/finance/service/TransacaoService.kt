@@ -13,6 +13,7 @@ import br.com.useinet.finance.repository.ContaRepository
 import br.com.useinet.finance.repository.TransacaoRepository
 import org.apache.commons.csv.CSVFormat
 import org.apache.commons.csv.CSVParser
+import org.apache.commons.csv.CSVRecord
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -193,28 +194,71 @@ class TransacaoService(
 
     @Transactional
     fun importarCsv(file: MultipartFile, usuario: Usuario): ImportResultResponse {
-        val content = file.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+        var content = file.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+        // Strip UTF-8 BOM if present
+        if (content.startsWith("\uFEFF")) content = content.substring(1)
+
+        // Find the data header line — skip summary lines produced by exportarCsv
+        val lines = content.lines()
+        val headerIndex = lines.indexOfFirst { line ->
+            val lower = line.lowercase()
+            lower.startsWith("id,") || lower.startsWith("id;") ||
+                lower.contains("descrição") || lower.contains("descricao")
+        }
+        val effectiveHeaderIndex = if (headerIndex >= 0) headerIndex else 0
+        // Parse column names from the actual header line to use as explicit headers
+        val headerLine = lines[effectiveHeaderIndex].trimStart('\uFEFF')
+        val explicitHeaders = headerLine.split(",").map { it.trim().trim('"') }
+        val csvContent = lines.drop(effectiveHeaderIndex + 1).joinToString("\n")
+
+        val fmtExport = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
 
         val csvFormat = CSVFormat.DEFAULT.builder()
-            .setHeader("data", "descricao", "valor", "tipo", "categoria")
-            .setSkipHeaderRecord(true)
+            .setHeader(*explicitHeaders.toTypedArray())
             .setIgnoreEmptyLines(true)
             .setTrim(true)
             .build()
 
-        val records = CSVParser.parse(content, csvFormat)
+        val records = CSVParser.parse(csvContent, csvFormat)
+
+        // Resolve column names flexibly — returns the ACTUAL header string from the file
+        fun colName(vararg candidates: String): String? =
+            candidates.firstNotNullOfOrNull { c -> explicitHeaders.firstOrNull { it.equals(c, ignoreCase = true) } }
+
+        val colDescricao = colName("Descrição", "Descricao", "descricao") ?: "Descrição"
+        val colValor     = colName("Valor", "valor") ?: "Valor"
+        val colTipo      = colName("Tipo", "tipo") ?: "Tipo"
+        val colData      = colName("Data", "data") ?: "Data"
+        val colCategoria = colName("Categoria", "categoria") ?: "Categoria"
+
         var importadas = 0
         var duplicatas = 0
         val erros = mutableListOf<String>()
+        var rowIndex = 0
 
-        for ((index, row) in records.withIndex()) {
-            val linha = index + 2
+        for (row in records) {
+            rowIndex++
+            val linha = effectiveHeaderIndex + 1 + rowIndex
             try {
-                val descricao = row.get("descricao")
-                val valorRaw = row.get("valor").replace(",", ".").toDouble()
+                val descricao = row.get(colDescricao)
+                val valorRaw = row.get(colValor).replace(",", ".").toDouble()
                 val valor = abs(valorRaw)
-                val tipo = TipoTransacao.valueOf(row.get("tipo").uppercase())
-                val data = LocalDate.parse(row.get("data")).atStartOfDay()
+                val tipoStr = row.get(colTipo).trim()
+                val tipo = when (tipoStr.uppercase()) {
+                    "RECEITA", "REVENUE", "INCOME" -> TipoTransacao.RECEITA
+                    "DESPESA", "EXPENSE"            -> TipoTransacao.DESPESA
+                    else -> TipoTransacao.valueOf(tipoStr.uppercase())
+                }
+                val dataStr = row.get(colData).trim()
+                val data: LocalDateTime = try {
+                    LocalDateTime.parse(dataStr, fmtExport)
+                } catch (_: Exception) {
+                    try {
+                        LocalDate.parse(dataStr).atStartOfDay()
+                    } catch (_: Exception) {
+                        LocalDate.parse(dataStr, DateTimeFormatter.ofPattern("dd/MM/yyyy")).atStartOfDay()
+                    }
+                }
 
                 if (transacaoRepository.existsByUsuarioAndDataAndValorAndDescricao(usuario, data, valor, descricao)) {
                     duplicatas++
@@ -229,7 +273,7 @@ class TransacaoService(
                     this.usuario = usuario
                 }
 
-                val categoriaStr = row.get("categoria")
+                val categoriaStr = try { row.get(colCategoria) } catch (_: Exception) { "" }
                 if (categoriaStr.isNotBlank()) {
                     categoriaRepository.findByNome(categoriaStr).ifPresent { transacao.categoria = it }
                 }
