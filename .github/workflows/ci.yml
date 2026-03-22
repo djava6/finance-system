@@ -10,14 +10,10 @@ on:
     paths-ignore:
       - 'frontend/**'
 
-env:
-  GCP_REGION: us-central1
-  IMAGE: ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/finance-system/app
-
 jobs:
 
   # ─────────────────────────────────────
-  # Job 1: Testes
+  # Job 1: Testes + Build do JAR
   # ─────────────────────────────────────
   test:
     name: Build & Test
@@ -37,6 +33,16 @@ jobs:
       - name: Run tests
         run: ./gradlew test --no-daemon
 
+      - name: Build JAR
+        run: ./gradlew bootJar -x test --no-daemon
+
+      - name: Upload JAR
+        uses: actions/upload-artifact@v7.0.0
+        with:
+          name: app-jar
+          path: build/libs/*.jar
+          retention-days: 1
+
       - name: Upload test report
         if: always()
         uses: actions/upload-artifact@v7.0.0
@@ -54,7 +60,7 @@ jobs:
           retention-days: 7
 
   # ─────────────────────────────────────
-  # Job 2: Build & Deploy (apenas main)
+  # Job 2: Build Image & Deploy (apenas main)
   # ─────────────────────────────────────
   deploy:
     name: Build Image & Deploy to Cloud Run
@@ -65,6 +71,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.2
+
+      - name: Download JAR
+        uses: actions/download-artifact@v4
+        with:
+          name: app-jar
+          path: build/libs/
 
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v3.0.0
@@ -77,17 +89,19 @@ jobs:
       - name: Configure Docker for Artifact Registry
         run: gcloud auth configure-docker ${{ secrets.GCP_REGION }}-docker.pkg.dev --quiet
 
-      - name: Build Docker image
-        run: |
-          docker build \
-            -t ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/finance-system/app:${{ github.sha }} \
-            -t ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/finance-system/app:latest \
-            .
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-      - name: Push Docker image
-        run: |
-          docker push ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/finance-system/app:${{ github.sha }}
-          docker push ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/finance-system/app:latest
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/finance-system/app:${{ github.sha }}
+            ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/finance-system/app:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Deploy to Cloud Run
         run: |
