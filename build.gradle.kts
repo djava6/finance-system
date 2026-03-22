@@ -69,6 +69,9 @@ dependencies {
     // Rate limiting
     implementation("com.bucket4j:bucket4j-core:8.10.1")
 
+    // WebSocket / STOMP
+    implementation("org.springframework.boot:spring-boot-starter-websocket")
+
     // CSV parsing (importação de transações)
     implementation("org.apache.commons:commons-csv:1.12.0")
 

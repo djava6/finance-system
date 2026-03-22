@@ -1,10 +1,13 @@
+import 'dart:async';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../core/utils/file_saver.dart';
 import '../../core/models/transaction_model.dart';
 import '../../core/services/transaction_service.dart';
+import '../../core/services/websocket_service.dart';
 import 'add_transaction_screen.dart';
 import 'edit_transaction_screen.dart';
 
@@ -18,6 +21,8 @@ class TransactionListScreen extends StatefulWidget {
 class _TransactionListScreenState extends State<TransactionListScreen> {
   final _service = TransactionService();
   final _scrollController = ScrollController();
+  final _wsService = WebSocketService();
+  StreamSubscription<String>? _wsSub;
 
   List<TransactionModel> _transactions = [];
   bool _loading = true;
@@ -39,11 +44,23 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
     super.initState();
     _scrollController.addListener(_onScroll);
     _load();
+    _connectWebSocket();
+  }
+
+  Future<void> _connectWebSocket() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    await _wsService.connect(uid);
+    _wsSub = _wsService.updates.listen((_) {
+      if (mounted) _load();
+    });
   }
 
   @override
   void dispose() {
     _scrollController.dispose();
+    _wsSub?.cancel();
+    _wsService.dispose();
     super.dispose();
   }
 

@@ -15,4 +15,11 @@ class ApiConstants {
   static const String contas = '$baseUrl/contas';
   static const String orcamentos = '$baseUrl/orcamentos';
   static const String metas = '$baseUrl/metas';
+
+  static String get wsUrl {
+    final base = baseUrl
+        .replaceFirst('https://', 'wss://')
+        .replaceFirst('http://', 'ws://');
+    return '$base/ws/websocket';
+  }
 }
