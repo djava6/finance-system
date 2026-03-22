@@ -151,9 +151,9 @@ class TransacaoService(
         val fmtDate = DateTimeFormatter.ofPattern("dd/MM/yyyy")
 
         val transacoes = if (inicio != null && fim != null)
-            transacaoRepository.findByUsuarioAndDataBetweenOrderByDataDesc(usuario, inicio, fim)
+            transacaoRepository.findByUsuarioAndDataBetweenOrderByDataAscIdAsc(usuario, inicio, fim)
         else
-            transacaoRepository.findByUsuarioOrderByDataDesc(usuario)
+            transacaoRepository.findByUsuarioOrderByDataAscIdAsc(usuario)
 
         val totalReceitas = transacoes.filter { it.tipo == TipoTransacao.RECEITA }.sumOf { it.valor ?: 0.0 }
         val totalDespesas = transacoes.filter { it.tipo == TipoTransacao.DESPESA }.sumOf { it.valor ?: 0.0 }
@@ -181,7 +181,7 @@ class TransacaoService(
             .distinctBy { it.id }
             .flatMap { conta ->
                 var saldo = 0.0
-                transacaoRepository.findByContaOrderByDataAsc(conta).map { t ->
+                transacaoRepository.findByContaOrderByDataAscIdAsc(conta).map { t ->
                     saldo += if (t.tipo == TipoTransacao.RECEITA) t.valor!! else -(t.valor!!)
                     t.id!! to saldo
                 }
@@ -191,7 +191,7 @@ class TransacaoService(
         // Cabeçalho
         csv.append("ID;Descrição;Valor;Tipo;Data;Categoria;Conta;\"Saldo da Conta\"\n")
 
-        // Linhas (mais recentes primeiro — DESC)
+        // Linhas (mais antigas primeiro — ASC, como extrato bancário)
         transacoes.forEach { t ->
             val tipoLegivel = if (t.tipo == TipoTransacao.RECEITA) "Receita" else "Despesa"
             csv.append(t.id).append(';')

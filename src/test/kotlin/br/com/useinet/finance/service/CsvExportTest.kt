@@ -43,7 +43,7 @@ class CsvExportTest {
     @Test
     fun exportarCsv_shouldReturnBomBytes() {
         val usuario = usuarioMock()
-        `when`(transacaoRepository.findByUsuarioOrderByDataDesc(usuario)).thenReturn(emptyList())
+        `when`(transacaoRepository.findByUsuarioOrderByDataAscIdAsc(usuario)).thenReturn(emptyList())
 
         val csv = exportAll(usuario)
         assertThat(csv[0]).isEqualTo(0xEF.toByte())
@@ -54,7 +54,7 @@ class CsvExportTest {
     @Test
     fun exportarCsv_shouldContainResumoHeader() {
         val usuario = usuarioMock()
-        `when`(transacaoRepository.findByUsuarioOrderByDataDesc(usuario)).thenReturn(emptyList())
+        `when`(transacaoRepository.findByUsuarioOrderByDataAscIdAsc(usuario)).thenReturn(emptyList())
 
         val content = String(exportAll(usuario), StandardCharsets.UTF_8)
         assertThat(content).contains("Período:")
@@ -67,7 +67,7 @@ class CsvExportTest {
     @Test
     fun exportarCsv_shouldUseSemicolonAsDelimiter() {
         val usuario = usuarioMock()
-        `when`(transacaoRepository.findByUsuarioOrderByDataDesc(usuario)).thenReturn(emptyList())
+        `when`(transacaoRepository.findByUsuarioOrderByDataAscIdAsc(usuario)).thenReturn(emptyList())
 
         val content = String(exportAll(usuario), StandardCharsets.UTF_8)
         assertThat(content).contains("ID;Descrição;Valor;Tipo;Data;Categoria;Conta;\"Saldo da Conta\"")
@@ -81,7 +81,7 @@ class CsvExportTest {
             id = 1L; descricao = "Salário"; valor = 5000.0
             tipo = TipoTransacao.RECEITA; data = LocalDateTime.of(2026, 3, 15, 10, 0)
         }
-        `when`(transacaoRepository.findByUsuarioOrderByDataDesc(usuario)).thenReturn(listOf(t))
+        `when`(transacaoRepository.findByUsuarioOrderByDataAscIdAsc(usuario)).thenReturn(listOf(t))
 
         val content = String(exportAll(usuario), StandardCharsets.UTF_8)
         assertThat(content).contains("5000,00")
@@ -99,7 +99,7 @@ class CsvExportTest {
             id = 2L; descricao = "Almoço"; valor = 25.0
             tipo = TipoTransacao.DESPESA; data = LocalDateTime.of(2026, 3, 15, 12, 0)
         }
-        `when`(transacaoRepository.findByUsuarioOrderByDataDesc(usuario)).thenReturn(listOf(receita, despesa))
+        `when`(transacaoRepository.findByUsuarioOrderByDataAscIdAsc(usuario)).thenReturn(listOf(receita, despesa))
 
         val content = String(exportAll(usuario), StandardCharsets.UTF_8)
         assertThat(content).contains("Receita")
@@ -117,9 +117,9 @@ class CsvExportTest {
             tipo = TipoTransacao.RECEITA; data = LocalDateTime.of(2026, 3, 15, 10, 0)
             this.conta = conta
         }
-        `when`(transacaoRepository.findByUsuarioOrderByDataDesc(usuario)).thenReturn(listOf(t))
+        `when`(transacaoRepository.findByUsuarioOrderByDataAscIdAsc(usuario)).thenReturn(listOf(t))
         // saldo acumulado calculado pela soma das transações da conta (ASC), não pelo campo conta.saldo
-        `when`(transacaoRepository.findByContaOrderByDataAsc(conta)).thenReturn(listOf(t))
+        `when`(transacaoRepository.findByContaOrderByDataAscIdAsc(conta)).thenReturn(listOf(t))
 
         val content = String(exportAll(usuario), StandardCharsets.UTF_8)
         // running balance após única RECEITA 1000,00 = 1000,00
@@ -137,7 +137,7 @@ class CsvExportTest {
             id = 2L; descricao = "Almoço"; valor = 25.0
             tipo = TipoTransacao.DESPESA; data = LocalDateTime.of(2026, 3, 15, 12, 0)
         }
-        `when`(transacaoRepository.findByUsuarioOrderByDataDesc(usuario)).thenReturn(listOf(receita, despesa))
+        `when`(transacaoRepository.findByUsuarioOrderByDataAscIdAsc(usuario)).thenReturn(listOf(receita, despesa))
 
         val content = String(exportAll(usuario), StandardCharsets.UTF_8)
         assertThat(content).contains(";1000,00")
@@ -154,7 +154,7 @@ class CsvExportTest {
             id = 1L; descricao = "Dentro"; valor = 500.0
             tipo = TipoTransacao.RECEITA; data = LocalDateTime.of(2026, 3, 15, 10, 0)
         }
-        `when`(transacaoRepository.findByUsuarioAndDataBetweenOrderByDataDesc(
+        `when`(transacaoRepository.findByUsuarioAndDataBetweenOrderByDataAscIdAsc(
             usuario, inicio.atStartOfDay(), fim.atTime(23, 59, 59)
         )).thenReturn(listOf(t))
 
@@ -172,7 +172,7 @@ class CsvExportTest {
             tipo = TipoTransacao.DESPESA; data = LocalDateTime.of(2026, 3, 15, 12, 0)
             this.categoria = categoria
         }
-        `when`(transacaoRepository.findByUsuarioOrderByDataDesc(usuario)).thenReturn(listOf(t))
+        `when`(transacaoRepository.findByUsuarioOrderByDataAscIdAsc(usuario)).thenReturn(listOf(t))
 
         val content = String(exportAll(usuario), StandardCharsets.UTF_8)
         assertThat(content).contains("Alimentação")
@@ -185,7 +185,7 @@ class CsvExportTest {
             id = 3L; descricao = "Salário; bônus"; valor = 100.0
             tipo = TipoTransacao.RECEITA; data = LocalDateTime.of(2026, 3, 15, 8, 0)
         }
-        `when`(transacaoRepository.findByUsuarioOrderByDataDesc(usuario)).thenReturn(listOf(t))
+        `when`(transacaoRepository.findByUsuarioOrderByDataAscIdAsc(usuario)).thenReturn(listOf(t))
 
         val content = String(exportAll(usuario), StandardCharsets.UTF_8)
         assertThat(content).contains("\"Salário; bônus\"")

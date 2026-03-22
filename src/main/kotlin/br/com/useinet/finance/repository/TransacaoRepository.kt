@@ -19,6 +19,8 @@ interface TransacaoRepository : JpaRepository<Transacao, Long> {
 
     fun findByUsuarioOrderByDataDesc(usuario: Usuario): List<Transacao>
 
+    fun findByUsuarioOrderByDataAscIdAsc(usuario: Usuario): List<Transacao>
+
     fun findByUsuario(usuario: Usuario, pageable: Pageable): Page<Transacao>
 
     fun findByUsuarioAndDataBetween(
@@ -63,7 +65,13 @@ interface TransacaoRepository : JpaRepository<Transacao, Long> {
         fim: LocalDateTime
     ): List<Transacao>
 
-    fun findByContaOrderByDataAsc(conta: Conta): List<Transacao>
+    fun findByUsuarioAndDataBetweenOrderByDataAscIdAsc(
+        usuario: Usuario,
+        inicio: LocalDateTime,
+        fim: LocalDateTime
+    ): List<Transacao>
+
+    fun findByContaOrderByDataAscIdAsc(conta: Conta): List<Transacao>
 
     @Query("""
         SELECT COALESCE(SUM(t.valor), 0) FROM Transacao t
