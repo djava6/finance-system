@@ -218,6 +218,25 @@ class TransacaoService(
                 .append('\n')
         }
 
+        // Linha de total — equivalente ao TOTAL row do XLSX
+        if (transacoes.isNotEmpty()) {
+            csv.append("TOTAL;;;;;;${fmtDecimal(saldo)};\n")
+        }
+
+        // Resumo por categoria — equivalente à aba Resumo do XLSX
+        csv.append("\n")
+        csv.append("Resumo por Categoria\n")
+        csv.append("Categoria;Despesas;Receitas\n")
+        transacoes
+            .groupBy { it.categoria?.nome ?: "(sem categoria)" }
+            .entries.sortedBy { it.key }
+            .forEach { (cat, trans) ->
+                val desp = trans.filter { it.tipo == TipoTransacao.DESPESA }.sumOf { it.valor ?: 0.0 }
+                val rec  = trans.filter { it.tipo == TipoTransacao.RECEITA }.sumOf { it.valor ?: 0.0 }
+                csv.append("${escapeCsvBr(cat)};${fmtDecimal(desp)};${fmtDecimal(rec)}\n")
+            }
+        csv.append("TOTAL;${fmtDecimal(totalDespesas)};${fmtDecimal(totalReceitas)}\n")
+
         return csv.toString().toByteArray(StandardCharsets.UTF_8)
     }
 
@@ -356,7 +375,7 @@ class TransacaoService(
             }
 
             val porCategoria = transacoes
-                .groupBy { it.categoria?.nome ?: "Sem categoria" }
+                .groupBy { it.categoria?.nome ?: "(sem categoria)" }
                 .entries.sortedBy { it.key }
 
             porCategoria.forEachIndexed { i, (cat, trans) ->
@@ -430,6 +449,8 @@ class TransacaoService(
         for (row in records) {
             rowIndex++
             val linha = effectiveHeaderIndex + 1 + rowIndex
+            // Fim da seção de dados — linha TOTAL marca onde começa o resumo
+            try { if (row.get(0).trim().equals("TOTAL", ignoreCase = true)) break } catch (_: Exception) {}
             try {
                 val descricao = row.get(colDescricao)
                 val valorRaw = row.get(colValor).replace(",", ".").toDouble()

@@ -190,6 +190,60 @@ class CsvExportTest {
         assertThat(content).contains("\"Salário; bônus\"")
     }
 
+    @Test
+    fun exportarCsv_shouldContainTotalRow() {
+        val usuario = usuarioMock()
+        val receita = Transacao().apply {
+            id = 1L; descricao = "Salário"; valor = 1000.0
+            tipo = TipoTransacao.RECEITA; data = LocalDate.of(2026, 3, 15)
+        }
+        val despesa = Transacao().apply {
+            id = 2L; descricao = "Aluguel"; valor = 400.0
+            tipo = TipoTransacao.DESPESA; data = LocalDate.of(2026, 3, 20)
+        }
+        `when`(transacaoRepository.findByUsuarioOrderByDataAscIdAsc(usuario)).thenReturn(listOf(receita, despesa))
+
+        val content = String(exportAll(usuario), StandardCharsets.UTF_8)
+        // TOTAL row: ID=TOTAL, Valor=resultado (600,00), campos intermediários vazios
+        assertThat(content).contains("TOTAL;;;;;;600,00;")
+    }
+
+    @Test
+    fun exportarCsv_shouldContainResumoPorCategoria() {
+        val usuario = usuarioMock()
+        val alimentacao = br.com.useinet.finance.model.Categoria().apply { id = 1L; nome = "Alimentação" }
+        val receita = Transacao().apply {
+            id = 1L; descricao = "Salário"; valor = 1000.0
+            tipo = TipoTransacao.RECEITA; data = LocalDate.of(2026, 3, 15)
+        }
+        val despesa = Transacao().apply {
+            id = 2L; descricao = "Mercado"; valor = 300.0
+            tipo = TipoTransacao.DESPESA; data = LocalDate.of(2026, 3, 20)
+            this.categoria = alimentacao
+        }
+        `when`(transacaoRepository.findByUsuarioOrderByDataAscIdAsc(usuario)).thenReturn(listOf(receita, despesa))
+
+        val content = String(exportAll(usuario), StandardCharsets.UTF_8)
+        assertThat(content).contains("Resumo por Categoria")
+        assertThat(content).contains("Categoria;Despesas;Receitas")
+        assertThat(content).contains("Alimentação;300,00;0,00")
+        assertThat(content).contains("\"(sem categoria)\";0,00;1000,00")
+        assertThat(content).contains("TOTAL;300,00;1000,00")
+    }
+
+    @Test
+    fun importarCsv_shouldStopAtTotalRowAndNotCountAsError() {
+        val usuario = usuarioMock()
+        `when`(transacaoRepository.existsByUsuarioAndDataAndValorAndDescricao(any(), any(), any(), any())).thenReturn(false)
+        `when`(transacaoRepository.save(any())).thenAnswer { it.getArgument(0) }
+
+        val file = exportCsv("1;15/03/2026;Salário;Receita;;;1000,00;")
+        val result = transacaoService.importarCsv(file, usuario)
+
+        assertThat(result.importadas).isEqualTo(1)
+        assertThat(result.erros).isEqualTo(0)
+    }
+
     // ─── importarCsv ──────────────────────────────────────────────────────────
 
     /** Simple import format (no summary lines, positional headers) */
@@ -199,9 +253,9 @@ class CsvExportTest {
         return MockMultipartFile("file", "import.csv", "text/csv", content.toByteArray(Charsets.UTF_8))
     }
 
-    /** Export-format CSV (BOM + summary lines + semicolon separator + dd/MM/yyyy dates) */
+    /** Export-format CSV — fiel ao formato gerado por exportarCsv (BOM, resumo, dados, TOTAL, resumo por categoria) */
     private fun exportCsv(vararg rows: String): MockMultipartFile {
-        val summary = listOf(
+        val header = listOf(
             "\uFEFFPeríodo:;Todas as transações",
             "Total Receitas:;1000,00",
             "Total Despesas:;0,00",
@@ -209,7 +263,15 @@ class CsvExportTest {
             "",
             "ID;Data;Descrição;Tipo;Categoria;Conta;Valor;Saldo da Conta"
         )
-        val content = (summary + rows).joinToString("\n")
+        val footer = listOf(
+            "TOTAL;;;;;;1000,00;",
+            "",
+            "Resumo por Categoria",
+            "Categoria;Despesas;Receitas",
+            "\"(sem categoria)\";0,00;1000,00",
+            "TOTAL;0,00;1000,00"
+        )
+        val content = (header + rows + footer).joinToString("\n")
         return MockMultipartFile("file", "export.csv", "text/csv", content.toByteArray(Charsets.UTF_8))
     }
 
