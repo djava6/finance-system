@@ -18,6 +18,10 @@ class AuthProvider extends ChangeNotifier {
     FirebaseAuth.instance.idTokenChanges().listen(_onIdTokenChanged);
   }
 
+  /// Constructor for test subclasses — skips Firebase subscription.
+  AuthProvider.skip();
+
+
   Future<void> _onIdTokenChanged(User? user) async {
     _user = user;
     if (user != null) {

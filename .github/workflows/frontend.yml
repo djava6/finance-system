@@ -13,11 +13,41 @@ on:
 jobs:
 
   # ─────────────────────────────────────
-  # Job 1: Flutter build (valida PR)
+  # Job 1: Integration tests (Chrome)
+  # ─────────────────────────────────────
+  test:
+    name: Flutter Integration Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.3.0
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2.18.0
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install Chrome
+        uses: browser-actions/setup-chrome@v1
+
+      - name: Run integration tests (Chrome headless)
+        working-directory: frontend
+        run: |
+          flutter pub get
+          flutter test integration_test/app_test.dart \
+            -d chrome \
+            --headless \
+            --dart-define=API_URL=http://localhost:8080
+
+  # ─────────────────────────────────────
+  # Job 2: Flutter build (valida PR)
   # ─────────────────────────────────────
   build:
     name: Flutter Build Web
     runs-on: ubuntu-latest
+    needs: test
 
     steps:
       - name: Checkout
@@ -38,7 +68,7 @@ jobs:
             --dart-define=API_URL=https://finance-system-zv4dye6hcq-uc.a.run.app
 
   # ─────────────────────────────────────
-  # Job 2: Deploy (apenas main)
+  # Job 3: Deploy (apenas main)
   # ─────────────────────────────────────
   deploy:
     name: Deploy to Firebase Hosting

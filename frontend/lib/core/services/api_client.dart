@@ -11,29 +11,42 @@ class ApiClient {
   /// Called when a 401 persists after token refresh — use to trigger logout.
   static void Function()? onUnauthorized;
 
+  /// Override HTTP client for integration tests.
+  static http.Client? _testClient;
+  static final _realClient = http.Client();
+
+  // ignore: avoid_setters_without_getters
+  static set testClient(http.Client? client) => _testClient = client;
+
+  http.Client get _http => _testClient ?? _realClient;
+
   Future<Map<String, String>> _headers({bool forceRefresh = false}) async {
-    final token = await FirebaseAuth.instance.currentUser
-        ?.getIdToken(forceRefresh);
-    return {
-      'Content-Type': 'application/json',
-      if (token != null) 'Authorization': 'Bearer $token',
-    };
+    try {
+      final token = await FirebaseAuth.instance.currentUser
+          ?.getIdToken(forceRefresh);
+      return {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      };
+    } catch (_) {
+      return {'Content-Type': 'application/json'};
+    }
   }
 
   Future<http.Response> get(Uri uri) =>
-      _execute((h) => http.get(uri, headers: h));
+      _execute((h) => _http.get(uri, headers: h));
 
   Future<http.Response> post(Uri uri, {required String body}) =>
-      _execute((h) => http.post(uri, headers: h, body: body));
+      _execute((h) => _http.post(uri, headers: h, body: body));
 
   Future<http.Response> put(Uri uri, {required String body}) =>
-      _execute((h) => http.put(uri, headers: h, body: body));
+      _execute((h) => _http.put(uri, headers: h, body: body));
 
   Future<http.Response> patch(Uri uri, {required String body}) =>
-      _execute((h) => http.patch(uri, headers: h, body: body));
+      _execute((h) => _http.patch(uri, headers: h, body: body));
 
   Future<http.Response> delete(Uri uri) =>
-      _execute((h) => http.delete(uri, headers: h));
+      _execute((h) => _http.delete(uri, headers: h));
 
   Future<http.Response> postMultipart(
     Uri uri, {
@@ -41,16 +54,21 @@ class ApiClient {
     required String fileName,
     required String fieldName,
   }) async {
-    final token = await FirebaseAuth.instance.currentUser?.getIdToken(false);
-    final request = http.MultipartRequest('POST', uri);
-    if (token != null) request.headers['Authorization'] = 'Bearer $token';
-    request.files.add(http.MultipartFile.fromBytes(
-      fieldName,
-      fileBytes,
-      filename: fileName,
-    ));
-    final streamed = await request.send().timeout(_timeout);
-    return http.Response.fromStream(streamed);
+    try {
+      final token =
+          await FirebaseAuth.instance.currentUser?.getIdToken(false);
+      final request = http.MultipartRequest('POST', uri);
+      if (token != null) request.headers['Authorization'] = 'Bearer $token';
+      request.files.add(http.MultipartFile.fromBytes(
+        fieldName,
+        fileBytes,
+        filename: fileName,
+      ));
+      final streamed = await request.send().timeout(_timeout);
+      return http.Response.fromStream(streamed);
+    } catch (_) {
+      rethrow;
+    }
   }
 
   Future<http.Response> _execute(
