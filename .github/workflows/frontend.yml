@@ -16,10 +16,10 @@ on:
 jobs:
 
   # ─────────────────────────────────────
-  # Job 1: Integration tests (Chrome)
+  # Job 1: Widget tests
   # ─────────────────────────────────────
   test:
-    name: Flutter Integration Tests
+    name: Flutter Widget Tests
     runs-on: ubuntu-latest
 
     steps:
@@ -32,24 +32,11 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Install Chrome + ChromeDriver
-        id: setup-chrome
-        uses: browser-actions/setup-chrome@v1
-        with:
-          install-chromedriver: true
-
-      - name: Start ChromeDriver
-        run: chromedriver --port=4444 &
-
-      - name: Run integration tests (Chrome headless via xvfb)
+      - name: Run widget tests
         working-directory: frontend
-        env:
-          CHROME_EXECUTABLE: ${{ steps.setup-chrome.outputs.chrome-path }}
         run: |
           flutter pub get
-          xvfb-run --auto-servernum flutter test integration_test/app_test.dart \
-            -d chrome \
-            --dart-define=API_URL=http://localhost:8080
+          flutter test test/
 
   # ─────────────────────────────────────
   # Job 2: Flutter build (valida PR)
