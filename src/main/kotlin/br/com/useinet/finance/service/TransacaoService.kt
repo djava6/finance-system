@@ -113,6 +113,15 @@ class TransacaoService(
         transacao.tipo = tipo
         if (request.data != null) transacao.data = request.data
 
+        transacao.recorrente = request.recorrente
+        transacao.frequencia = if (request.recorrente) request.frequencia else null
+        transacao.proximaOcorrencia = when {
+            !request.recorrente -> null
+            request.proximaOcorrencia != null -> request.proximaOcorrencia
+            transacao.proximaOcorrencia != null -> transacao.proximaOcorrencia
+            else -> calcularProximaOcorrencia(transacao.data!!, request.frequencia!!)
+        }
+
         transacao.categoria = if (request.categoriaId != null) {
             categoriaRepository.findById(request.categoriaId)
                 .orElseThrow { IllegalArgumentException("Categoria não encontrada.") }

@@ -390,7 +390,16 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                                         : Colors.red,
                                   ),
                                 ),
-                                title: Text(t.descricao),
+                                title: Row(
+                                  children: [
+                                    Expanded(child: Text(t.descricao)),
+                                    if (t.recorrente)
+                                      Tooltip(
+                                        message: 'Recorrente • ${t.frequencia?.toLowerCase() ?? ''}',
+                                        child: const Icon(Icons.repeat, size: 14, color: Colors.grey),
+                                      ),
+                                  ],
+                                ),
                                 subtitle: Text(
                                     '${_dateFormat.format(t.data)}${t.categoria != null ? ' • ${t.categoria}' : ''}'),
                                 trailing: Row(

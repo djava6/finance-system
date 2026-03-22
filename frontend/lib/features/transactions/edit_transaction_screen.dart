@@ -27,6 +27,8 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
   List<CategoriaModel> _categorias = [];
   List<ContaModel> _contas = [];
   bool _loading = false;
+  late bool _recorrente;
+  String? _frequencia;
 
   final _service = TransactionService();
   final _categoriaService = CategoriaService();
@@ -44,6 +46,8 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
         TextEditingController(text: widget.transaction.valor.toStringAsFixed(2));
     _tipo = widget.transaction.tipo;
     _reciboUrl = widget.transaction.reciboUrl;
+    _recorrente = widget.transaction.recorrente;
+    _frequencia = widget.transaction.frequencia;
     _loadData();
   }
 
@@ -104,6 +108,8 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
         tipo: _tipo,
         categoriaId: _categoriaId,
         contaId: _contaId,
+        recorrente: _recorrente,
+        frequencia: _recorrente ? _frequencia : null,
       );
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
@@ -204,6 +210,36 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
                 ],
                 onChanged: (v) => setState(() => _contaId = v),
               ),
+              const SizedBox(height: 16),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Transação recorrente'),
+                secondary: const Icon(Icons.repeat),
+                value: _recorrente,
+                onChanged: (v) => setState(() {
+                  _recorrente = v;
+                  if (!v) _frequencia = null;
+                }),
+              ),
+              if (_recorrente) ...[
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  value: _frequencia,
+                  decoration: const InputDecoration(
+                    labelText: 'Frequência',
+                    prefixIcon: Icon(Icons.calendar_today_outlined),
+                    border: OutlineInputBorder(),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'SEMANAL', child: Text('Semanal')),
+                    DropdownMenuItem(value: 'MENSAL', child: Text('Mensal')),
+                    DropdownMenuItem(value: 'ANUAL', child: Text('Anual')),
+                  ],
+                  onChanged: (v) => setState(() => _frequencia = v),
+                  validator: (v) =>
+                      _recorrente && (v == null || v.isEmpty) ? 'Selecione a frequência' : null,
+                ),
+              ],
               const SizedBox(height: 24),
               _ReciboWidget(
                 url: _reciboUrl,

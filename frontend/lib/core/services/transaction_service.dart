@@ -127,6 +127,8 @@ class TransactionService {
     required String tipo,
     int? categoriaId,
     int? contaId,
+    bool recorrente = false,
+    String? frequencia,
   }) async {
     final response = await _client.put(
       Uri.parse('${ApiConstants.transactions}/$id'),
@@ -136,6 +138,8 @@ class TransactionService {
         'tipo': tipo,
         if (categoriaId != null) 'categoriaId': categoriaId,
         if (contaId != null) 'contaId': contaId,
+        'recorrente': recorrente,
+        if (frequencia != null) 'frequencia': frequencia,
       }),
     );
     if (response.statusCode == 200) {
