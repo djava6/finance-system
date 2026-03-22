@@ -56,7 +56,7 @@ Flyway migrations run automatically on startup from `src/main/resources/db/migra
 ### Database Schema
 
 Core tables (created via Flyway V1–V20): `usuarios`, `categorias`, `contas`, `transacoes`, `billing_events`, `orcamentos`, `metas`.
-Adding a new table = new `V{N}__description.sql` migration file (next: `V21__...sql`). Note: `transacoes.data` is type `DATE` (mapped to `LocalDate` in Kotlin).
+Adding a new table = new `V{N}__description.sql` migration file (next: `V24__...sql`). Note: `transacoes.data` is type `DATE` (mapped to `LocalDate` in Kotlin).
 
 ### Frontend (`frontend/lib/`)
 
@@ -93,7 +93,7 @@ Docker image is tagged with git SHA + `latest`, pushed to Artifact Registry.
 
 - **Authentication**: All endpoints are protected by `FirebaseAuthenticationFilter`. Never add password-based or JWT auth.
 - **New API endpoint**: Add controller → service → repository. Follow existing patterns in `TransacaoController`.
-- **Database changes**: Always via Flyway migration. Increment version number (next: `V21__...sql`).
+- **Database changes**: Always via Flyway migration. Increment version number (next: `V24__...sql`).
 - **Secrets**: Use GCP Secret Manager in prod profile. Never hardcode credentials.
 - **GitHub Projects board**: When starting an issue, move card to "In Progress"; when done, move to "Done" (automated via `project-automation.yml`, but verify manually if needed).
 - **Tests**: Use Testcontainers (PostgreSQL) for integration tests. No mocking the database.
