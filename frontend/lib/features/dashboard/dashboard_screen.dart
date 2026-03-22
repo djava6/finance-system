@@ -27,24 +27,37 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0;
+  late final List<Key> _tabKeys;
 
-  static const _tabs = [
-    _HomeTab(),
-    TransactionListScreen(),
-    CategoryListScreen(),
-    ProfileScreen(),
-    AccountListScreen(),
-    BudgetListScreen(),
-    GoalListScreen(),
+  @override
+  void initState() {
+    super.initState();
+    _tabKeys = List.generate(7, (_) => UniqueKey());
+  }
+
+  List<Widget> get _tabs => [
+    _HomeTab(key: _tabKeys[0]),
+    TransactionListScreen(key: _tabKeys[1]),
+    CategoryListScreen(key: _tabKeys[2]),
+    ProfileScreen(key: _tabKeys[3]),
+    AccountListScreen(key: _tabKeys[4]),
+    BudgetListScreen(key: _tabKeys[5]),
+    GoalListScreen(key: _tabKeys[6]),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _tabs[_selectedIndex],
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: _tabs,
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
-        onDestinationSelected: (i) => setState(() => _selectedIndex = i),
+        onDestinationSelected: (i) => setState(() {
+          _selectedIndex = i;
+          _tabKeys[i] = UniqueKey(); // força rebuild só desta aba
+        }),
         destinations: const [
           NavigationDestination(
               icon: Icon(Icons.home_outlined),
