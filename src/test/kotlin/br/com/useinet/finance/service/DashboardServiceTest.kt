@@ -15,7 +15,7 @@ import org.mockito.Mock
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
 import org.mockito.junit.jupiter.MockitoExtension
-import java.time.LocalDateTime
+import java.time.LocalDate
 
 @ExtendWith(MockitoExtension::class)
 class DashboardServiceTest {
@@ -47,7 +47,7 @@ class DashboardServiceTest {
     @Test
     fun getDashboard_shouldReturnUltimasTransacoes() {
         val usuario = usuarioMock()
-        val t = Transacao().apply { descricao = "Salário"; valor = 5000.0; tipo = TipoTransacao.RECEITA; data = LocalDateTime.now() }
+        val t = Transacao().apply { descricao = "Salário"; valor = 5000.0; tipo = TipoTransacao.RECEITA; data = LocalDate.now() }
         `when`(transacaoRepository.sumValorByUsuarioAndTipo(usuario, TipoTransacao.RECEITA)).thenReturn(5000.0)
         `when`(transacaoRepository.sumValorByUsuarioAndTipo(usuario, TipoTransacao.DESPESA)).thenReturn(0.0)
         `when`(contaRepository.findByUsuario(usuario)).thenReturn(emptyList())

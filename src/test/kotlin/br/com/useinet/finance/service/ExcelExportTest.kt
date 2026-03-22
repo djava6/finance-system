@@ -16,7 +16,7 @@ import org.mockito.Mock
 import org.mockito.Mockito.`when`
 import org.mockito.junit.jupiter.MockitoExtension
 import java.io.ByteArrayOutputStream
-import java.time.LocalDateTime
+import java.time.LocalDate
 
 @ExtendWith(MockitoExtension::class)
 class ExcelExportTest {
@@ -55,11 +55,11 @@ class ExcelExportTest {
         val usuario = usuarioMock()
         val receita = Transacao().apply {
             id = 1L; descricao = "Salário"; valor = 5000.0
-            tipo = TipoTransacao.RECEITA; data = LocalDateTime.of(2026, 3, 15, 10, 0)
+            tipo = TipoTransacao.RECEITA; data = LocalDate.of(2026, 3, 15)
         }
         val despesa = Transacao().apply {
             id = 2L; descricao = "Aluguel"; valor = 1500.0
-            tipo = TipoTransacao.DESPESA; data = LocalDateTime.of(2026, 3, 5, 9, 0)
+            tipo = TipoTransacao.DESPESA; data = LocalDate.of(2026, 3, 5)
         }
         val bytes = export(usuario, listOf(receita, despesa))
         assertThat(bytes).isNotEmpty()
@@ -73,7 +73,7 @@ class ExcelExportTest {
         val categoria = Categoria().apply { id = 1L; nome = "Alimentação" }
         val t = Transacao().apply {
             id = 1L; descricao = "Mercado"; valor = 300.0
-            tipo = TipoTransacao.DESPESA; data = LocalDateTime.of(2026, 3, 10, 12, 0)
+            tipo = TipoTransacao.DESPESA; data = LocalDate.of(2026, 3, 10)
             this.categoria = categoria
         }
         val bytes = export(usuario, listOf(t))
@@ -86,7 +86,7 @@ class ExcelExportTest {
         val conta = Conta().apply { id = 1L; nome = "Nubank"; saldo = 4700.0 }
         val t = Transacao().apply {
             id = 1L; descricao = "Pix enviado"; valor = 200.0
-            tipo = TipoTransacao.DESPESA; data = LocalDateTime.of(2026, 3, 12, 15, 0)
+            tipo = TipoTransacao.DESPESA; data = LocalDate.of(2026, 3, 12)
             this.conta = conta
         }
         `when`(transacaoRepository.findByContaOrderByDataAscIdAsc(conta)).thenReturn(listOf(t))
@@ -100,12 +100,12 @@ class ExcelExportTest {
         val conta = Conta().apply { id = 1L; nome = "Nubank"; saldo = 4800.0 }
         val receita = Transacao().apply {
             id = 1L; descricao = "Salário"; valor = 5000.0
-            tipo = TipoTransacao.RECEITA; data = LocalDateTime.of(2026, 3, 1, 10, 0)
+            tipo = TipoTransacao.RECEITA; data = LocalDate.of(2026, 3, 1)
             this.conta = conta
         }
         val despesa = Transacao().apply {
             id = 2L; descricao = "Aluguel"; valor = 1500.0
-            tipo = TipoTransacao.DESPESA; data = LocalDateTime.of(2026, 3, 5, 9, 0)
+            tipo = TipoTransacao.DESPESA; data = LocalDate.of(2026, 3, 5)
             this.conta = conta
         }
         `when`(transacaoRepository.findByContaOrderByDataAscIdAsc(conta)).thenReturn(listOf(receita, despesa))
@@ -121,8 +121,8 @@ class ExcelExportTest {
     @Test
     fun exportarXlsx_withPeriodFilter_shouldQueryByPeriod() {
         val usuario = usuarioMock()
-        val inicio = java.time.LocalDateTime.of(2026, 3, 1, 0, 0)
-        val fim = java.time.LocalDateTime.of(2026, 3, 31, 23, 59, 59)
+        val inicio = LocalDate.of(2026, 3, 1)
+        val fim = LocalDate.of(2026, 3, 31)
         `when`(transacaoRepository.findByUsuarioAndDataBetweenOrderByDataAscIdAsc(usuario, inicio, fim))
             .thenReturn(emptyList())
 

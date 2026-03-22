@@ -127,7 +127,7 @@ class TransacaoControllerIT : IntegrationTestBase() {
         val response = restTemplate.exchange("/transactions/export/csv", HttpMethod.GET, HttpEntity<Any>(authHeaders()), ByteArray::class.java)
         val csv = String(response.body!!, StandardCharsets.UTF_8)
         // verify the full column header structure, not just the presence of "Conta"
-        assertThat(csv).contains("ID;Descrição;Valor;Tipo;Data;Categoria;Conta;\"Saldo da Conta\"")
+        assertThat(csv).contains("ID;Data;Descrição;Tipo;Categoria;Conta;Valor;Saldo da Conta")
         assertThat(csv).contains("CSV Conta")
     }
 
@@ -185,9 +185,9 @@ class TransacaoControllerIT : IntegrationTestBase() {
         )
 
         // Saldo acumulado após RECEITA 1000 = 1000, após DESPESA 300 = 700
-        assertThat(csv).contains("ExtratoIT;1000,00")
-        assertThat(csv).contains("ExtratoIT;700,00")
-        assertThat(csv).doesNotContain("ExtratoIT;1300,00") // saldo atual incorreto
+        // New column order: ...;Conta;Valor;Saldo da Conta
+        assertThat(csv).contains("ExtratoIT;1000,00;1000,00")
+        assertThat(csv).contains("ExtratoIT;300,00;700,00")
     }
 
     @Test

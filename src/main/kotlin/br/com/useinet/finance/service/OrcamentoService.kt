@@ -9,7 +9,7 @@ import br.com.useinet.finance.repository.OrcamentoRepository
 import br.com.useinet.finance.repository.TransacaoRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.time.LocalDateTime
+import java.time.LocalDate
 
 @Service
 class OrcamentoService(
@@ -66,7 +66,7 @@ class OrcamentoService(
     }
 
     fun checkAlerts(usuario: Usuario, mes: Int, ano: Int) {
-        val inicio = LocalDateTime.of(ano, mes, 1, 0, 0)
+        val inicio = LocalDate.of(ano, mes, 1)
         val fim = inicio.plusMonths(1)
         orcamentoRepository.findByUsuarioAndMesAndAno(usuario, mes, ano).forEach { orc ->
             val gasto = calcularGasto(orc, usuario, inicio, fim)
@@ -88,13 +88,13 @@ class OrcamentoService(
     }
 
     private fun toResponse(o: Orcamento, usuario: Usuario): OrcamentoResponse {
-        val inicio = LocalDateTime.of(o.ano, o.mes, 1, 0, 0)
+        val inicio = LocalDate.of(o.ano, o.mes, 1)
         val fim = inicio.plusMonths(1)
         val gasto = calcularGasto(o, usuario, inicio, fim)
         return OrcamentoResponse.from(o, gasto)
     }
 
-    private fun calcularGasto(o: Orcamento, usuario: Usuario, inicio: LocalDateTime, fim: LocalDateTime): Double {
+    private fun calcularGasto(o: Orcamento, usuario: Usuario, inicio: LocalDate, fim: LocalDate): Double {
         return if (o.categoria != null) {
             transacaoRepository.sumDespesasByCategoriaAndPeriod(usuario, o.categoria!!, inicio, fim)
         } else {

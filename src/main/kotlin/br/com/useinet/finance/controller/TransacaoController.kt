@@ -46,15 +46,12 @@ class TransacaoController(private val transacaoService: TransacaoService) {
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "20") size: Int
     ): ResponseEntity<PageResponse<TransacaoResponse>> {
-        val dtInicio = inicio?.atStartOfDay()
-        val dtFim = fim?.atTime(23, 59, 59)
-
-        if (dtInicio != null && dtFim != null && dtInicio.isAfter(dtFim)) {
+        if (inicio != null && fim != null && inicio.isAfter(fim)) {
             throw IllegalArgumentException("Data inicial deve ser anterior à data final.")
         }
 
         val pageable = PageRequest.of(page, size, Sort.by("data").descending())
-        return ResponseEntity.ok(transacaoService.listar(usuario, dtInicio, dtFim, pageable))
+        return ResponseEntity.ok(transacaoService.listar(usuario, inicio, fim, pageable))
     }
 
     @PostMapping("/import", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
@@ -89,12 +86,10 @@ class TransacaoController(private val transacaoService: TransacaoService) {
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) fim: LocalDate?,
         response: HttpServletResponse
     ) {
-        val dtInicio = inicio?.atStartOfDay()
-        val dtFim = fim?.atTime(23, 59, 59)
         response.contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         response.setHeader(HttpHeaders.CONTENT_DISPOSITION,
             "attachment; filename=\"transacoes_${LocalDate.now()}.xlsx\"")
-        transacaoService.exportarXlsx(usuario, dtInicio, dtFim, response.outputStream)
+        transacaoService.exportarXlsx(usuario, inicio, fim, response.outputStream)
     }
 
     @GetMapping("/export/csv")
@@ -104,9 +99,7 @@ class TransacaoController(private val transacaoService: TransacaoService) {
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) inicio: LocalDate?,
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) fim: LocalDate?
     ): ResponseEntity<ByteArray> {
-        val dtInicio = inicio?.atStartOfDay()
-        val dtFim = fim?.atTime(23, 59, 59)
-        val csv = transacaoService.exportarCsv(usuario, dtInicio, dtFim)
+        val csv = transacaoService.exportarCsv(usuario, inicio, fim)
         return ResponseEntity.ok()
             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"transacoes.csv\"")
             .contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))

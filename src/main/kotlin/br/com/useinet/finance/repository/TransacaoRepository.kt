@@ -13,7 +13,6 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 import java.time.LocalDate
-import java.time.LocalDateTime
 import java.util.Optional
 
 interface TransacaoRepository : JpaRepository<Transacao, Long> {
@@ -26,14 +25,14 @@ interface TransacaoRepository : JpaRepository<Transacao, Long> {
 
     fun findByUsuarioAndDataBetween(
         usuario: Usuario,
-        inicio: LocalDateTime,
-        fim: LocalDateTime,
+        inicio: LocalDate,
+        fim: LocalDate,
         pageable: Pageable
     ): Page<Transacao>
 
     fun existsByUsuarioAndDataAndValorAndDescricao(
         usuario: Usuario,
-        data: LocalDateTime,
+        data: LocalDate,
         valor: Double,
         descricao: String
     ): Boolean
@@ -62,14 +61,14 @@ interface TransacaoRepository : JpaRepository<Transacao, Long> {
 
     fun findByUsuarioAndDataBetweenOrderByDataDesc(
         usuario: Usuario,
-        inicio: LocalDateTime,
-        fim: LocalDateTime
+        inicio: LocalDate,
+        fim: LocalDate
     ): List<Transacao>
 
     fun findByUsuarioAndDataBetweenOrderByDataAscIdAsc(
         usuario: Usuario,
-        inicio: LocalDateTime,
-        fim: LocalDateTime
+        inicio: LocalDate,
+        fim: LocalDate
     ): List<Transacao>
 
     fun findByContaOrderByDataAscIdAsc(conta: Conta): List<Transacao>
@@ -86,8 +85,8 @@ interface TransacaoRepository : JpaRepository<Transacao, Long> {
     fun sumDespesasByCategoriaAndPeriod(
         @Param("usuario") usuario: Usuario,
         @Param("categoria") categoria: Categoria,
-        @Param("inicio") inicio: LocalDateTime,
-        @Param("fim") fim: LocalDateTime
+        @Param("inicio") inicio: LocalDate,
+        @Param("fim") fim: LocalDate
     ): Double
 
     @Query("""
@@ -99,8 +98,8 @@ interface TransacaoRepository : JpaRepository<Transacao, Long> {
     """)
     fun sumDespesasSemCategoriaAndPeriod(
         @Param("usuario") usuario: Usuario,
-        @Param("inicio") inicio: LocalDateTime,
-        @Param("fim") fim: LocalDateTime
+        @Param("inicio") inicio: LocalDate,
+        @Param("fim") fim: LocalDate
     ): Double
 
     @Query("""

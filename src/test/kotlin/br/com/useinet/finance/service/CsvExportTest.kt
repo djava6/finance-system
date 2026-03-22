@@ -22,7 +22,6 @@ import org.mockito.kotlin.whenever
 import org.springframework.mock.web.MockMultipartFile
 import java.nio.charset.StandardCharsets
 import java.time.LocalDate
-import java.time.LocalDateTime
 import java.util.Optional
 
 @ExtendWith(MockitoExtension::class)
@@ -38,7 +37,7 @@ class CsvExportTest {
 
     private fun exportAll(usuario: Usuario) = transacaoService.exportarCsv(usuario, null, null)
     private fun exportPeriod(usuario: Usuario, inicio: LocalDate, fim: LocalDate) =
-        transacaoService.exportarCsv(usuario, inicio.atStartOfDay(), fim.atTime(23, 59, 59))
+        transacaoService.exportarCsv(usuario, inicio, fim)
 
     @Test
     fun exportarCsv_shouldReturnBomBytes() {
@@ -70,7 +69,7 @@ class CsvExportTest {
         `when`(transacaoRepository.findByUsuarioOrderByDataAscIdAsc(usuario)).thenReturn(emptyList())
 
         val content = String(exportAll(usuario), StandardCharsets.UTF_8)
-        assertThat(content).contains("ID;Descrição;Valor;Tipo;Data;Categoria;Conta;\"Saldo da Conta\"")
+        assertThat(content).contains("ID;Data;Descrição;Tipo;Categoria;Conta;Valor;Saldo da Conta")
         assertThat(content).doesNotContain("ID,")
     }
 
@@ -79,7 +78,7 @@ class CsvExportTest {
         val usuario = usuarioMock()
         val t = Transacao().apply {
             id = 1L; descricao = "Salário"; valor = 5000.0
-            tipo = TipoTransacao.RECEITA; data = LocalDateTime.of(2026, 3, 15, 10, 0)
+            tipo = TipoTransacao.RECEITA; data = LocalDate.of(2026, 3, 15)
         }
         `when`(transacaoRepository.findByUsuarioOrderByDataAscIdAsc(usuario)).thenReturn(listOf(t))
 
@@ -93,11 +92,11 @@ class CsvExportTest {
         val usuario = usuarioMock()
         val receita = Transacao().apply {
             id = 1L; descricao = "Salário"; valor = 1000.0
-            tipo = TipoTransacao.RECEITA; data = LocalDateTime.of(2026, 3, 15, 10, 0)
+            tipo = TipoTransacao.RECEITA; data = LocalDate.of(2026, 3, 15)
         }
         val despesa = Transacao().apply {
             id = 2L; descricao = "Almoço"; valor = 25.0
-            tipo = TipoTransacao.DESPESA; data = LocalDateTime.of(2026, 3, 15, 12, 0)
+            tipo = TipoTransacao.DESPESA; data = LocalDate.of(2026, 3, 15)
         }
         `when`(transacaoRepository.findByUsuarioOrderByDataAscIdAsc(usuario)).thenReturn(listOf(receita, despesa))
 
@@ -114,7 +113,7 @@ class CsvExportTest {
         val conta = Conta().apply { id = 1L; nome = "Nubank"; saldo = 1975.0 }
         val t = Transacao().apply {
             id = 1L; descricao = "Salário"; valor = 1000.0
-            tipo = TipoTransacao.RECEITA; data = LocalDateTime.of(2026, 3, 15, 10, 0)
+            tipo = TipoTransacao.RECEITA; data = LocalDate.of(2026, 3, 15)
             this.conta = conta
         }
         `when`(transacaoRepository.findByUsuarioOrderByDataAscIdAsc(usuario)).thenReturn(listOf(t))
@@ -131,11 +130,11 @@ class CsvExportTest {
         val usuario = usuarioMock()
         val receita = Transacao().apply {
             id = 1L; descricao = "Salário"; valor = 1000.0
-            tipo = TipoTransacao.RECEITA; data = LocalDateTime.of(2026, 3, 15, 10, 0)
+            tipo = TipoTransacao.RECEITA; data = LocalDate.of(2026, 3, 15)
         }
         val despesa = Transacao().apply {
             id = 2L; descricao = "Almoço"; valor = 25.0
-            tipo = TipoTransacao.DESPESA; data = LocalDateTime.of(2026, 3, 15, 12, 0)
+            tipo = TipoTransacao.DESPESA; data = LocalDate.of(2026, 3, 15)
         }
         `when`(transacaoRepository.findByUsuarioOrderByDataAscIdAsc(usuario)).thenReturn(listOf(receita, despesa))
 
@@ -152,10 +151,10 @@ class CsvExportTest {
         val fim = LocalDate.of(2026, 3, 31)
         val t = Transacao().apply {
             id = 1L; descricao = "Dentro"; valor = 500.0
-            tipo = TipoTransacao.RECEITA; data = LocalDateTime.of(2026, 3, 15, 10, 0)
+            tipo = TipoTransacao.RECEITA; data = LocalDate.of(2026, 3, 15)
         }
         `when`(transacaoRepository.findByUsuarioAndDataBetweenOrderByDataAscIdAsc(
-            usuario, inicio.atStartOfDay(), fim.atTime(23, 59, 59)
+            usuario, inicio, fim
         )).thenReturn(listOf(t))
 
         val content = String(exportPeriod(usuario, inicio, fim), StandardCharsets.UTF_8)
@@ -169,7 +168,7 @@ class CsvExportTest {
         val categoria = Categoria().apply { id = 1L; nome = "Alimentação" }
         val t = Transacao().apply {
             id = 2L; descricao = "Mercado"; valor = 200.0
-            tipo = TipoTransacao.DESPESA; data = LocalDateTime.of(2026, 3, 15, 12, 0)
+            tipo = TipoTransacao.DESPESA; data = LocalDate.of(2026, 3, 15)
             this.categoria = categoria
         }
         `when`(transacaoRepository.findByUsuarioOrderByDataAscIdAsc(usuario)).thenReturn(listOf(t))
@@ -183,7 +182,7 @@ class CsvExportTest {
         val usuario = usuarioMock()
         val t = Transacao().apply {
             id = 3L; descricao = "Salário; bônus"; valor = 100.0
-            tipo = TipoTransacao.RECEITA; data = LocalDateTime.of(2026, 3, 15, 8, 0)
+            tipo = TipoTransacao.RECEITA; data = LocalDate.of(2026, 3, 15)
         }
         `when`(transacaoRepository.findByUsuarioOrderByDataAscIdAsc(usuario)).thenReturn(listOf(t))
 
@@ -200,15 +199,15 @@ class CsvExportTest {
         return MockMultipartFile("file", "import.csv", "text/csv", content.toByteArray(Charsets.UTF_8))
     }
 
-    /** Export-format CSV (BOM + summary lines + semicolon separator + dd/MM/yyyy HH:mm dates) */
+    /** Export-format CSV (BOM + summary lines + semicolon separator + dd/MM/yyyy dates) */
     private fun exportCsv(vararg rows: String): MockMultipartFile {
         val summary = listOf(
             "\uFEFFPeríodo:;Todas as transações",
             "Total Receitas:;1000,00",
             "Total Despesas:;0,00",
-            "Saldo:;1000,00",
+            "Resultado do período:;1000,00",
             "",
-            "ID;Descrição;Valor;Tipo;Data;Categoria;Conta;Saldo da Conta"
+            "ID;Data;Descrição;Tipo;Categoria;Conta;Valor;Saldo da Conta"
         )
         val content = (summary + rows).joinToString("\n")
         return MockMultipartFile("file", "export.csv", "text/csv", content.toByteArray(Charsets.UTF_8))
@@ -341,10 +340,10 @@ class CsvExportTest {
         `when`(transacaoRepository.existsByUsuarioAndDataAndValorAndDescricao(any(), any(), any(), any())).thenReturn(false)
         `when`(transacaoRepository.save(any())).thenAnswer { it.getArgument(0) }
 
-        // Rows in the export column order: ID;Descrição;Valor;Tipo;Data;Categoria;Conta;Saldo da Conta
+        // Rows in the export column order: ID;Data;Descrição;Tipo;Categoria;Conta;Valor;Saldo da Conta
         val file = exportCsv(
-            "1;Salário;5000,00;Receita;15/03/2026 10:00;;Nubank;5000,00",
-            "2;Mercado;200,00;Despesa;15/03/2026 12:00;Alimentação;Nubank;4800,00"
+            "1;15/03/2026;Salário;Receita;;Nubank;5000,00;5000,00",
+            "2;15/03/2026;Mercado;Despesa;Alimentação;Nubank;200,00;4800,00"
         )
         val result = transacaoService.importarCsv(file, usuario)
 
@@ -360,7 +359,7 @@ class CsvExportTest {
         `when`(transacaoRepository.existsByUsuarioAndDataAndValorAndDescricao(any(), any(), any(), any())).thenReturn(false)
         `when`(transacaoRepository.save(any())).thenAnswer { it.getArgument(0) }
 
-        val file = exportCsv("1;Pagamento;100,00;Despesa;20/03/2026 09:00;;Carteira;900,00")
+        val file = exportCsv("1;20/03/2026;Pagamento;Despesa;;Carteira;100,00;900,00")
         val result = transacaoService.importarCsv(file, usuario)
 
         assertThat(result.erros).isEqualTo(0)
@@ -378,11 +377,11 @@ class CsvExportTest {
             t
         }
 
-        val file = exportCsv("3;Almoço;35,50;Despesa;21/03/2026 13:30;;Carteira;")
+        val file = exportCsv("3;21/03/2026;Almoço;Despesa;;Carteira;35,50;")
         transacaoService.importarCsv(file, usuario)
 
         assertThat(saved).hasSize(1)
-        assertThat(saved[0].data).isEqualTo(java.time.LocalDateTime.of(2026, 3, 21, 13, 30))
+        assertThat(saved[0].data).isEqualTo(LocalDate.of(2026, 3, 21))
         assertThat(saved[0].valor).isEqualTo(35.5)
     }
 }

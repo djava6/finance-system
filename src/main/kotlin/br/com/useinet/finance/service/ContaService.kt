@@ -10,7 +10,7 @@ import br.com.useinet.finance.repository.ContaRepository
 import br.com.useinet.finance.repository.TransacaoRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.time.LocalDateTime
+import java.time.LocalDate
 
 @Service
 class ContaService(
@@ -40,7 +40,7 @@ class ContaService(
                 this.descricao = "Saldo inicial – ${savedConta.nome}"
                 this.valor = saldoInicial
                 this.tipo = TipoTransacao.RECEITA
-                this.data = LocalDateTime.now()
+                this.data = LocalDate.now()
                 this.conta = savedConta
                 this.usuario = usuario
             })

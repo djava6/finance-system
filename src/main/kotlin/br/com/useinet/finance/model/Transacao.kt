@@ -2,7 +2,6 @@ package br.com.useinet.finance.model
 
 import jakarta.persistence.*
 import java.time.LocalDate
-import java.time.LocalDateTime
 
 @Entity
 @Table(name = "transacoes")
@@ -23,7 +22,7 @@ class Transacao {
     var tipo: TipoTransacao? = null
 
     @Column(nullable = false)
-    var data: LocalDateTime? = null
+    var data: LocalDate? = null
 
     @ManyToOne
     var categoria: Categoria? = null

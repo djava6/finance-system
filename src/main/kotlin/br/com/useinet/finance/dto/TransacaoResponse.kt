@@ -4,14 +4,13 @@ import br.com.useinet.finance.model.FrequenciaRecorrencia
 import br.com.useinet.finance.model.TipoTransacao
 import br.com.useinet.finance.model.Transacao
 import java.time.LocalDate
-import java.time.LocalDateTime
 
 data class TransacaoResponse(
     val id: Long?,
     val descricao: String?,
     val valor: Double?,
     val tipo: TipoTransacao?,
-    val data: LocalDateTime?,
+    val data: LocalDate?,
     val categoriaId: Long?,
     val categoria: String?,
     val contaId: Long?,

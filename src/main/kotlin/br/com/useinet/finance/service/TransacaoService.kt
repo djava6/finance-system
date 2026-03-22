@@ -24,7 +24,6 @@ import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.multipart.MultipartFile
 import java.nio.charset.StandardCharsets
 import java.time.LocalDate
-import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import kotlin.math.abs
 
@@ -47,13 +46,13 @@ class TransacaoService(
             this.descricao = request.descricao
             this.valor = request.valor
             this.tipo = request.tipo
-            this.data = request.data ?: LocalDateTime.now()
+            this.data = request.data ?: LocalDate.now()
             this.usuario = usuario
             this.recorrente = request.recorrente
             this.frequencia = request.frequencia
             this.proximaOcorrencia = if (request.recorrente) {
                 request.proximaOcorrencia ?: calcularProximaOcorrencia(
-                    (request.data?.toLocalDate() ?: LocalDate.now()), request.frequencia!!
+                    request.data ?: LocalDate.now(), request.frequencia!!
                 )
             } else null
         }
@@ -80,7 +79,7 @@ class TransacaoService(
     }
 
     @Transactional(readOnly = true)
-    fun listar(usuario: Usuario, inicio: LocalDateTime?, fim: LocalDateTime?, pageable: Pageable): PageResponse<TransacaoResponse> {
+    fun listar(usuario: Usuario, inicio: LocalDate?, fim: LocalDate?, pageable: Pageable): PageResponse<TransacaoResponse> {
         val page = if (inicio != null && fim != null)
             transacaoRepository.findByUsuarioAndDataBetween(usuario, inicio, fim, pageable)
         else
@@ -161,8 +160,7 @@ class TransacaoService(
     }
 
     @Transactional(readOnly = true)
-    fun exportarCsv(usuario: Usuario, inicio: LocalDateTime?, fim: LocalDateTime?): ByteArray {
-        val fmtDateTime = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
+    fun exportarCsv(usuario: Usuario, inicio: LocalDate?, fim: LocalDate?): ByteArray {
         val fmtDate = DateTimeFormatter.ofPattern("dd/MM/yyyy")
 
         val transacoes = if (inicio != null && fim != null)
@@ -204,18 +202,18 @@ class TransacaoService(
             .toMap()
 
         // Cabeçalho
-        csv.append("ID;Descrição;Valor;Tipo;Data;Categoria;Conta;\"Saldo da Conta\"\n")
+        csv.append("ID;Data;Descrição;Tipo;Categoria;Conta;Valor;Saldo da Conta\n")
 
         // Linhas (mais antigas primeiro — ASC, como extrato bancário)
         transacoes.forEach { t ->
             val tipoLegivel = if (t.tipo == TipoTransacao.RECEITA) "Receita" else "Despesa"
             csv.append(t.id).append(';')
+                .append(escapeCsvBr(requireNotNull(t.data).format(fmtDate))).append(';')
                 .append(escapeCsvBr(t.descricao)).append(';')
-                .append(fmtDecimal(t.valor ?: 0.0)).append(';')
                 .append(tipoLegivel).append(';')
-                .append(escapeCsvBr(requireNotNull(t.data).format(fmtDateTime))).append(';')
                 .append(t.categoria?.let { escapeCsvBr(it.nome) } ?: "").append(';')
                 .append(t.conta?.let { escapeCsvBr(it.nome) } ?: "").append(';')
+                .append(fmtDecimal(t.valor ?: 0.0)).append(';')
                 .append(t.id?.let { saldoAposTransacao[it]?.let { v -> fmtDecimal(v) } } ?: "")
                 .append('\n')
         }
@@ -224,7 +222,7 @@ class TransacaoService(
     }
 
     @Transactional(readOnly = true)
-    fun exportarXlsx(usuario: Usuario, inicio: LocalDateTime?, fim: LocalDateTime?, outputStream: java.io.OutputStream) {
+    fun exportarXlsx(usuario: Usuario, inicio: LocalDate?, fim: LocalDate?, outputStream: java.io.OutputStream) {
         val fmtDate = DateTimeFormatter.ofPattern("dd/MM/yyyy")
 
         val transacoes = if (inicio != null && fim != null)
@@ -294,7 +292,7 @@ class TransacaoService(
             // Linha 4: separador em branco
             // Linha 5: cabeçalho
             val HEADER_ROW = 5
-            listOf("ID", "Data", "Descrição", "Tipo", "Categoria", "Conta", "Valor (R$)", "Saldo da Conta")
+            listOf("ID", "Data", "Descrição", "Tipo", "Categoria", "Conta", "Valor", "Saldo da Conta")
                 .forEachIndexed { col, h ->
                     ws.value(HEADER_ROW, col, h)
                     ws.style(HEADER_ROW, col).fillColor(GRAY).bold().set()
@@ -308,7 +306,7 @@ class TransacaoService(
                 ws.value(row, 0, t.id)
                 ws.style(row, 0).fillColor(color).set()
 
-                ws.value(row, 1, t.data?.toLocalDate())
+                ws.value(row, 1, t.data)
                 ws.style(row, 1).fillColor(color).format(DATE_FMT).set()
 
                 ws.value(row, 2, t.descricao)
@@ -317,7 +315,7 @@ class TransacaoService(
                 ws.value(row, 3, if (t.tipo == TipoTransacao.RECEITA) "Receita" else "Despesa")
                 ws.style(row, 3).fillColor(color).set()
 
-                ws.value(row, 4, t.categoria?.nome ?: "Sem categoria")
+                ws.value(row, 4, t.categoria?.nome ?: "")
                 ws.style(row, 4).fillColor(color).set()
 
                 ws.value(row, 5, t.conta?.nome ?: "")
@@ -402,7 +400,7 @@ class TransacaoService(
         val explicitHeaders = headerLine.split(separator).map { it.trim().trim('"') }
         val csvContent = lines.drop(effectiveHeaderIndex + 1).joinToString("\n")
 
-        val fmtExport = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
+        val fmtDMY = DateTimeFormatter.ofPattern("dd/MM/yyyy")
 
         val csvFormat = CSVFormat.DEFAULT.builder()
             .setDelimiter(separator)
@@ -443,13 +441,14 @@ class TransacaoService(
                     else -> TipoTransacao.valueOf(tipoStr.uppercase())
                 }
                 val dataStr = row.get(colData).trim()
-                val data: LocalDateTime = try {
-                    LocalDateTime.parse(dataStr, fmtExport)
+                val data: LocalDate = try {
+                    LocalDate.parse(dataStr, fmtDMY)  // dd/MM/yyyy (export format)
                 } catch (_: Exception) {
                     try {
-                        LocalDate.parse(dataStr).atStartOfDay()
+                        LocalDate.parse(dataStr)  // yyyy-MM-dd (ISO, simple import)
                     } catch (_: Exception) {
-                        LocalDate.parse(dataStr, DateTimeFormatter.ofPattern("dd/MM/yyyy")).atStartOfDay()
+                        // backward compat: old exports had dd/MM/yyyy HH:mm — use date part only
+                        LocalDate.parse(dataStr.take(10), fmtDMY)
                     }
                 }
 
@@ -512,7 +511,7 @@ class TransacaoService(
                 descricao = template.descricao
                 valor = template.valor
                 tipo = template.tipo
-                data = template.proximaOcorrencia!!.atStartOfDay()
+                data = template.proximaOcorrencia!!
                 usuario = template.usuario
                 categoria = template.categoria
                 conta = template.conta

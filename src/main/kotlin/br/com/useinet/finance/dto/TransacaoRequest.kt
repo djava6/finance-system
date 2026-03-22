@@ -6,7 +6,6 @@ import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Positive
 import java.time.LocalDate
-import java.time.LocalDateTime
 
 data class TransacaoRequest(
     @field:NotBlank(message = "Descrição da transação é obrigatória.")
@@ -19,7 +18,7 @@ data class TransacaoRequest(
     @field:NotNull(message = "Tipo da transação é obrigatório.")
     val tipo: TipoTransacao? = null,
 
-    val data: LocalDateTime? = null,
+    val data: LocalDate? = null,
     val categoriaId: Long? = null,
     val contaId: Long? = null,
     val recorrente: Boolean = false,

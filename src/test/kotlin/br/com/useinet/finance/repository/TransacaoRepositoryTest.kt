@@ -10,7 +10,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.transaction.annotation.Transactional
-import java.time.LocalDateTime
+import java.time.LocalDate
 
 @Transactional
 class TransacaoRepositoryTest : IntegrationTestBase() {
@@ -30,9 +30,9 @@ class TransacaoRepositoryTest : IntegrationTestBase() {
     }
 
     private fun salvar(descricao: String, valor: Double, tipo: TipoTransacao): Transacao =
-        salvar(descricao, valor, tipo, LocalDateTime.now(), null)
+        salvar(descricao, valor, tipo, LocalDate.now(), null)
 
-    private fun salvar(descricao: String, valor: Double, tipo: TipoTransacao, data: LocalDateTime, categoria: Categoria?): Transacao {
+    private fun salvar(descricao: String, valor: Double, tipo: TipoTransacao, data: LocalDate, categoria: Categoria?): Transacao {
         val outerUsuario = usuario
         return transacaoRepository.save(Transacao().apply {
             this.descricao = descricao
@@ -59,7 +59,7 @@ class TransacaoRepositoryTest : IntegrationTestBase() {
 
     @Test
     fun findTop10ByUsuarioOrderByDataDesc_shouldReturnAtMost10() {
-        val base = LocalDateTime.now()
+        val base = LocalDate.now()
         for (i in 0 until 15) salvar("T$i", 10.0, TipoTransacao.DESPESA, base.minusDays(i.toLong()), null)
         val result = transacaoRepository.findTop10ByUsuarioOrderByDataDesc(usuario)
         assertThat(result).hasSize(10)
@@ -79,7 +79,7 @@ class TransacaoRepositoryTest : IntegrationTestBase() {
     @Test
     fun existsByCategoria_shouldReturnTrueWhenInUse() {
         val cat = categoriaRepository.save(Categoria().apply { nome = "Alimentação_${System.nanoTime()}" })
-        salvar("Mercado", 200.0, TipoTransacao.DESPESA, LocalDateTime.now(), cat)
+        salvar("Mercado", 200.0, TipoTransacao.DESPESA, LocalDate.now(), cat)
         assertThat(transacaoRepository.existsByCategoria(cat)).isTrue()
     }
 
@@ -94,9 +94,9 @@ class TransacaoRepositoryTest : IntegrationTestBase() {
         val cat1 = categoriaRepository.save(Categoria().apply { nome = "Mercado_${System.nanoTime()}" })
         val cat2 = categoriaRepository.save(Categoria().apply { nome = "Transporte_${System.nanoTime()}" })
 
-        salvar("Supermercado", 300.0, TipoTransacao.DESPESA, LocalDateTime.now(), cat1)
-        salvar("Padaria", 50.0, TipoTransacao.DESPESA, LocalDateTime.now(), cat1)
-        salvar("Ônibus", 80.0, TipoTransacao.DESPESA, LocalDateTime.now(), cat2)
+        salvar("Supermercado", 300.0, TipoTransacao.DESPESA, LocalDate.now(), cat1)
+        salvar("Padaria", 50.0, TipoTransacao.DESPESA, LocalDate.now(), cat1)
+        salvar("Ônibus", 80.0, TipoTransacao.DESPESA, LocalDate.now(), cat2)
 
         val result = transacaoRepository.findDespesasPorCategoria(usuario, TipoTransacao.DESPESA)
         assertThat(result).hasSize(2)
@@ -106,8 +106,8 @@ class TransacaoRepositoryTest : IntegrationTestBase() {
 
     @Test
     fun findEvolucaoMensal_shouldGroupByMonthAndYear() {
-        val jan = LocalDateTime.of(2025, 1, 15, 0, 0)
-        val feb = LocalDateTime.of(2025, 2, 10, 0, 0)
+        val jan = LocalDate.of(2025, 1, 15)
+        val feb = LocalDate.of(2025, 2, 10)
         salvar("Jan Receita", 3000.0, TipoTransacao.RECEITA, jan, null)
         salvar("Jan Despesa", 1000.0, TipoTransacao.DESPESA, jan, null)
         salvar("Fev Receita", 2000.0, TipoTransacao.RECEITA, feb, null)
@@ -123,7 +123,7 @@ class TransacaoRepositoryTest : IntegrationTestBase() {
 
     @Test
     fun findByUsuarioAndDataBetween_shouldFilterByDateRange() {
-        val base = LocalDateTime.of(2025, 6, 15, 12, 0)
+        val base = LocalDate.of(2025, 6, 15)
         salvar("Dentro", 100.0, TipoTransacao.RECEITA, base, null)
         salvar("Fora", 200.0, TipoTransacao.RECEITA, base.minusMonths(2), null)
         val result = transacaoRepository.findByUsuarioAndDataBetweenOrderByDataDesc(usuario, base.minusDays(1), base.plusDays(1))

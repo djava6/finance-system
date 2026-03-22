@@ -12,7 +12,6 @@ import br.com.useinet.finance.repository.TransacaoRepository
 import br.com.useinet.finance.service.OrcamentoService
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
-import org.assertj.core.api.Assertions.within
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.ArgumentMatchers.any
@@ -25,8 +24,7 @@ import org.springframework.data.domain.Sort
 import org.mockito.Mockito.`when`
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.whenever
-import java.time.LocalDateTime
-import java.time.temporal.ChronoUnit
+import java.time.LocalDate
 import java.util.Optional
 
 @ExtendWith(MockitoExtension::class)
@@ -42,7 +40,7 @@ class TransacaoServiceTest {
 
     @Test
     fun criar_shouldSaveTransacaoAndReturnResponse() {
-        val request = TransacaoRequest(descricao = "Salário", valor = 5000.0, tipo = TipoTransacao.RECEITA, data = LocalDateTime.now())
+        val request = TransacaoRequest(descricao = "Salário", valor = 5000.0, tipo = TipoTransacao.RECEITA, data = LocalDate.now())
         val saved = Transacao().apply { descricao = "Salário"; valor = 5000.0; tipo = TipoTransacao.RECEITA; data = request.data }
         `when`(transacaoRepository.save(any())).thenReturn(saved)
 
@@ -65,14 +63,14 @@ class TransacaoServiceTest {
 
         transacaoService.criar(request, usuarioMock())
         assertThat(captured[0].data).isNotNull
-        assertThat(captured[0].data!!).isCloseTo(LocalDateTime.now(), within(5, ChronoUnit.SECONDS))
+        assertThat(captured[0].data!!).isEqualTo(LocalDate.now())
     }
 
     @Test
     fun criar_shouldAssociarCategoria() {
         val categoria = Categoria().apply { id = 1L; nome = "Alimentação" }
         val request = TransacaoRequest(descricao = "Restaurante", valor = 80.0, tipo = TipoTransacao.DESPESA, categoriaId = 1L)
-        val saved = Transacao().apply { descricao = "Restaurante"; valor = 80.0; tipo = TipoTransacao.DESPESA; data = LocalDateTime.now(); this.categoria = categoria }
+        val saved = Transacao().apply { descricao = "Restaurante"; valor = 80.0; tipo = TipoTransacao.DESPESA; data = LocalDate.now(); this.categoria = categoria }
         `when`(categoriaRepository.findById(1L)).thenReturn(Optional.of(categoria))
         `when`(transacaoRepository.save(any())).thenReturn(saved)
 
@@ -86,7 +84,7 @@ class TransacaoServiceTest {
         val usuario = usuarioMock()
         val conta = Conta().apply { id = 10L; nome = "Nubank"; saldo = 1000.0 }
         val request = TransacaoRequest(descricao = "Salário", valor = 500.0, tipo = TipoTransacao.RECEITA, contaId = 10L)
-        val saved = Transacao().apply { descricao = "Salário"; valor = 500.0; tipo = TipoTransacao.RECEITA; data = LocalDateTime.now(); this.conta = conta }
+        val saved = Transacao().apply { descricao = "Salário"; valor = 500.0; tipo = TipoTransacao.RECEITA; data = LocalDate.now(); this.conta = conta }
         `when`(contaRepository.findByIdAndUsuario(10L, usuario)).thenReturn(Optional.of(conta))
         `when`(transacaoRepository.save(any())).thenReturn(saved)
 
@@ -102,7 +100,7 @@ class TransacaoServiceTest {
         val usuario = usuarioMock()
         val conta = Conta().apply { id = 10L; nome = "Nubank"; saldo = 1000.0 }
         val request = TransacaoRequest(descricao = "Mercado", valor = 200.0, tipo = TipoTransacao.DESPESA, contaId = 10L)
-        val saved = Transacao().apply { descricao = "Mercado"; valor = 200.0; tipo = TipoTransacao.DESPESA; data = LocalDateTime.now(); this.conta = conta }
+        val saved = Transacao().apply { descricao = "Mercado"; valor = 200.0; tipo = TipoTransacao.DESPESA; data = LocalDate.now(); this.conta = conta }
         `when`(contaRepository.findByIdAndUsuario(10L, usuario)).thenReturn(Optional.of(conta))
         `when`(transacaoRepository.save(any())).thenReturn(saved)
 
@@ -138,7 +136,7 @@ class TransacaoServiceTest {
         val usuario = usuarioMock()
         val contaAntiga = Conta().apply { id = 1L; saldo = 800.0 }
         val contaNova = Conta().apply { id = 2L; nome = "Inter"; saldo = 500.0 }
-        val existing = Transacao().apply { descricao = "Original"; valor = 200.0; tipo = TipoTransacao.DESPESA; data = LocalDateTime.now(); conta = contaAntiga }
+        val existing = Transacao().apply { descricao = "Original"; valor = 200.0; tipo = TipoTransacao.DESPESA; data = LocalDate.now(); conta = contaAntiga }
         val request = TransacaoRequest(descricao = "Atualizado", valor = 300.0, tipo = TipoTransacao.DESPESA, contaId = 2L)
 
         whenever(transacaoRepository.findByIdAndUsuario(org.mockito.kotlin.any(), org.mockito.kotlin.any())).thenReturn(Optional.of(existing))
@@ -154,7 +152,7 @@ class TransacaoServiceTest {
     @Test
     fun listar_shouldReturnTransacoesDoUsuario() {
         val usuario = usuarioMock()
-        val t = Transacao().apply { descricao = "Salário"; valor = 5000.0; tipo = TipoTransacao.RECEITA; data = LocalDateTime.now() }
+        val t = Transacao().apply { descricao = "Salário"; valor = 5000.0; tipo = TipoTransacao.RECEITA; data = LocalDate.now() }
         val pageable = PageRequest.of(0, 20, Sort.by("data").descending())
         `when`(transacaoRepository.findByUsuario(usuario, pageable)).thenReturn(PageImpl(listOf(t)))
 
@@ -185,7 +183,7 @@ class TransacaoServiceTest {
     fun atualizar_shouldUpdateAndReturnResponse() {
         val usuario = usuarioMock()
         val request = TransacaoRequest(descricao = "Novo Salário", valor = 6000.0, tipo = TipoTransacao.RECEITA)
-        val existing = Transacao().apply { descricao = "Salário"; valor = 5000.0; tipo = TipoTransacao.RECEITA; data = LocalDateTime.now() }
+        val existing = Transacao().apply { descricao = "Salário"; valor = 5000.0; tipo = TipoTransacao.RECEITA; data = LocalDate.now() }
         `when`(transacaoRepository.findByIdAndUsuario(1L, usuario)).thenReturn(Optional.of(existing))
         `when`(transacaoRepository.save(any())).thenAnswer { it.getArgument(0) }
 
@@ -244,7 +242,7 @@ class TransacaoServiceTest {
     @Test
     fun atualizar_shouldThrowWhenCategoriaNotFound() {
         val usuario = usuarioMock()
-        val existing = Transacao().apply { descricao = "X"; valor = 100.0; tipo = TipoTransacao.RECEITA; data = LocalDateTime.now() }
+        val existing = Transacao().apply { descricao = "X"; valor = 100.0; tipo = TipoTransacao.RECEITA; data = LocalDate.now() }
         val request = TransacaoRequest(descricao = "X", valor = 100.0, tipo = TipoTransacao.RECEITA, categoriaId = 99L)
         `when`(transacaoRepository.findByIdAndUsuario(1L, usuario)).thenReturn(java.util.Optional.of(existing))
         `when`(categoriaRepository.findById(99L)).thenReturn(java.util.Optional.empty())
@@ -256,10 +254,10 @@ class TransacaoServiceTest {
     @Test
     fun listar_shouldUseDateFilterWhenInicioAndFimProvided() {
         val usuario = usuarioMock()
-        val inicio = LocalDateTime.of(2025, 1, 1, 0, 0)
-        val fim = LocalDateTime.of(2025, 12, 31, 23, 59)
+        val inicio = LocalDate.of(2025, 1, 1)
+        val fim = LocalDate.of(2025, 12, 31)
         val pageable = PageRequest.of(0, 20)
-        val t = Transacao().apply { descricao = "Filtrado"; valor = 500.0; tipo = TipoTransacao.RECEITA; data = LocalDateTime.of(2025, 6, 1, 0, 0) }
+        val t = Transacao().apply { descricao = "Filtrado"; valor = 500.0; tipo = TipoTransacao.RECEITA; data = LocalDate.of(2025, 6, 1) }
         `when`(transacaoRepository.findByUsuarioAndDataBetween(usuario, inicio, fim, pageable)).thenReturn(PageImpl(listOf(t)))
 
         val result = transacaoService.listar(usuario, inicio, fim, pageable)
@@ -272,7 +270,7 @@ class TransacaoServiceTest {
     fun atualizar_shouldClearContaWhenContaIdIsNull() {
         val usuario = usuarioMock()
         val conta = Conta().apply { id = 1L; saldo = 800.0 }
-        val existing = Transacao().apply { descricao = "Original"; valor = 200.0; tipo = TipoTransacao.DESPESA; data = LocalDateTime.now(); this.conta = conta }
+        val existing = Transacao().apply { descricao = "Original"; valor = 200.0; tipo = TipoTransacao.DESPESA; data = LocalDate.now(); this.conta = conta }
         val request = TransacaoRequest(descricao = "Atualizado", valor = 200.0, tipo = TipoTransacao.DESPESA, contaId = null)
 
         `when`(transacaoRepository.findByIdAndUsuario(1L, usuario)).thenReturn(java.util.Optional.of(existing))
