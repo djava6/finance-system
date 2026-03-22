@@ -5,6 +5,8 @@ import br.com.useinet.finance.model.Conta
 import br.com.useinet.finance.model.TipoTransacao
 import br.com.useinet.finance.model.Transacao
 import br.com.useinet.finance.model.Usuario
+import br.com.useinet.finance.model.Categoria
+import br.com.useinet.finance.repository.CategoriaRepository
 import br.com.useinet.finance.repository.ContaRepository
 import br.com.useinet.finance.repository.TransacaoRepository
 import org.assertj.core.api.Assertions.assertThat
@@ -26,6 +28,7 @@ class ContaServiceTest {
 
     @Mock lateinit var contaRepository: ContaRepository
     @Mock lateinit var transacaoRepository: TransacaoRepository
+    @Mock lateinit var categoriaRepository: CategoriaRepository
     @InjectMocks lateinit var contaService: ContaService
 
     private fun usuarioMock() = Usuario().apply { nome = "Carlos"; email = "carlos@email.com" }
@@ -46,8 +49,10 @@ class ContaServiceTest {
     fun criar_shouldCreateTransacaoSaldoInicialWhenSaldoPositive() {
         val usuario = usuarioMock()
         val saved = Conta().apply { id = 1L; nome = "Poupança"; saldo = 0.0; this.usuario = usuario }
+        val patrimonio = Categoria().apply { id = 10L; nome = "Patrimônio" }
         `when`(contaRepository.save(any())).thenReturn(saved)
         `when`(transacaoRepository.save(any())).thenAnswer { it.getArgument(0) }
+        `when`(categoriaRepository.findByNome("Patrimônio")).thenReturn(Optional.of(patrimonio))
 
         val response = contaService.criar(ContaRequest(nome = "Poupança", saldo = 500.0), usuario)
 
@@ -60,6 +65,7 @@ class ContaServiceTest {
         assertThat(captor.value.valor).isEqualTo(500.0)
         assertThat(captor.value.tipo).isEqualTo(TipoTransacao.RECEITA)
         assertThat(captor.value.conta).isEqualTo(saved)
+        assertThat(captor.value.categoria?.nome).isEqualTo("Patrimônio")
     }
 
     @Test

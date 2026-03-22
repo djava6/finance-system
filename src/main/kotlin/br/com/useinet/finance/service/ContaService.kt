@@ -6,6 +6,7 @@ import br.com.useinet.finance.model.Conta
 import br.com.useinet.finance.model.TipoTransacao
 import br.com.useinet.finance.model.Transacao
 import br.com.useinet.finance.model.Usuario
+import br.com.useinet.finance.repository.CategoriaRepository
 import br.com.useinet.finance.repository.ContaRepository
 import br.com.useinet.finance.repository.TransacaoRepository
 import org.springframework.stereotype.Service
@@ -16,6 +17,7 @@ import java.time.LocalDate
 class ContaService(
     private val contaRepository: ContaRepository,
     private val transacaoRepository: TransacaoRepository,
+    private val categoriaRepository: CategoriaRepository,
 ) {
 
     @Transactional(readOnly = true)
@@ -36,6 +38,7 @@ class ContaService(
         val savedConta = contaRepository.save(conta)
 
         if (saldoInicial > 0.0) {
+            val patrimonio = categoriaRepository.findByNome("Patrimônio").orElse(null)
             transacaoRepository.save(Transacao().apply {
                 this.descricao = "Saldo inicial – ${savedConta.nome}"
                 this.valor = saldoInicial
@@ -43,6 +46,7 @@ class ContaService(
                 this.data = LocalDate.now()
                 this.conta = savedConta
                 this.usuario = usuario
+                this.categoria = patrimonio
             })
             savedConta.saldo = saldoInicial
             contaRepository.save(savedConta)
