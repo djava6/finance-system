@@ -149,6 +149,15 @@ class TransactionService {
     throw Exception(_extractError(response.body));
   }
 
+  Future<void> deletarRecibo(int id) async {
+    final response = await _client.delete(
+      Uri.parse('${ApiConstants.transactions}/$id/recibo'),
+    );
+    if (response.statusCode != 204) {
+      throw Exception('Erro ao remover recibo');
+    }
+  }
+
   Future<void> deletar(int id) async {
     final response = await _client.delete(
       Uri.parse('${ApiConstants.transactions}/$id'),

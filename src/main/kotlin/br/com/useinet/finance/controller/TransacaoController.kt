@@ -81,6 +81,13 @@ class TransacaoController(private val transacaoService: TransacaoService) {
     ): ResponseEntity<TransacaoResponse> =
         ResponseEntity.ok(transacaoService.atualizarRecibo(id, request, usuario))
 
+    @DeleteMapping("/{id}/recibo")
+    @Operation(summary = "Remover recibo", description = "Remove a URL do recibo da transação")
+    fun removerRecibo(@PathVariable id: Long, @AuthenticationPrincipal usuario: Usuario): ResponseEntity<Void> {
+        transacaoService.removerRecibo(id, usuario)
+        return ResponseEntity.noContent().build()
+    }
+
     @DeleteMapping("/{id}")
     @Operation(summary = "Excluir transação", description = "Remove uma transação do usuário logado")
     fun deletar(@PathVariable id: Long, @AuthenticationPrincipal usuario: Usuario): ResponseEntity<Void> {

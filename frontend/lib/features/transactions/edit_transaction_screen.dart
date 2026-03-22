@@ -96,6 +96,38 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
     }
   }
 
+  Future<void> _deletarRecibo() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Remover recibo'),
+        content: const Text('Deseja remover o recibo anexado?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Remover'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    setState(() => _uploadingRecibo = true);
+    try {
+      await _reciboService.deletar(widget.transaction.id);
+      if (mounted) setState(() => _reciboUrl = null);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _uploadingRecibo = false);
+    }
+  }
+
   Future<void> _salvar() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _loading = true);
@@ -245,6 +277,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
                 url: _reciboUrl,
                 uploading: _uploadingRecibo,
                 onUpload: _uploadRecibo,
+                onDelete: _reciboUrl != null ? _deletarRecibo : null,
               ),
               const SizedBox(height: 32),
               FilledButton.icon(
@@ -269,12 +302,20 @@ class _ReciboWidget extends StatelessWidget {
   final String? url;
   final bool uploading;
   final VoidCallback onUpload;
+  final VoidCallback? onDelete;
 
   const _ReciboWidget({
     required this.url,
     required this.uploading,
     required this.onUpload,
+    this.onDelete,
   });
+
+  bool get _isImage {
+    if (url == null) return false;
+    final lower = url!.toLowerCase().split('?').first;
+    return lower.endsWith('.jpg') || lower.endsWith('.jpeg') || lower.endsWith('.png');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -291,39 +332,60 @@ class _ReciboWidget extends StatelessWidget {
               const SizedBox(
                   width: 20, height: 20,
                   child: CircularProgressIndicator(strokeWidth: 2))
-            else
+            else ...[
+              if (url != null && onDelete != null)
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                  tooltip: 'Remover recibo',
+                  onPressed: onDelete,
+                ),
               TextButton.icon(
                 onPressed: onUpload,
                 icon: const Icon(Icons.upload_outlined, size: 18),
                 label: Text(url == null ? 'Anexar' : 'Substituir'),
               ),
+            ],
           ],
         ),
-        if (url != null)
-          InkWell(
-            onTap: () => launchUrl(Uri.parse(url!),
-                mode: LaunchMode.externalApplication),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.green.shade300),
-                borderRadius: BorderRadius.circular(8),
-                color: Colors.green.shade50,
+        if (url != null) ...[
+          if (_isImage)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.network(
+                url!,
+                height: 160,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _linkTile(context),
               ),
-              child: Row(
-                children: [
-                  Icon(Icons.check_circle_outline,
-                      color: Colors.green.shade700, size: 18),
-                  const SizedBox(width: 8),
-                  const Expanded(
-                    child: Text('Ver recibo anexado',
-                        style: TextStyle(decoration: TextDecoration.underline)),
-                  ),
-                ],
-              ),
-            ),
-          ),
+            )
+          else
+            _linkTile(context),
+        ],
       ],
+    );
+  }
+
+  Widget _linkTile(BuildContext context) {
+    return InkWell(
+      onTap: () => launchUrl(Uri.parse(url!), mode: LaunchMode.externalApplication),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.green.shade300),
+          borderRadius: BorderRadius.circular(8),
+          color: Colors.green.shade50,
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.check_circle_outline, color: Colors.green.shade700, size: 18),
+            const SizedBox(width: 8),
+            const Expanded(
+              child: Text('Ver recibo anexado',
+                  style: TextStyle(decoration: TextDecoration.underline)),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

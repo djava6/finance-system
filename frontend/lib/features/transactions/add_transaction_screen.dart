@@ -1,9 +1,11 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/material.dart';
 import '../../core/models/categoria_model.dart';
 import '../../core/models/conta_model.dart';
 import '../../core/services/categoria_service.dart';
 import '../../core/services/conta_service.dart';
+import '../../core/services/recibo_service.dart';
 import '../../core/services/transaction_service.dart';
 
 class AddTransactionScreen extends StatefulWidget {
@@ -29,6 +31,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   final _service = TransactionService();
   final _categoriaService = CategoriaService();
   final _contaService = ContaService();
+  final _reciboService = ReciboService();
+  PlatformFile? _pendingRecibo;
 
   @override
   void initState() {
@@ -63,7 +67,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     setState(() => _loading = true);
 
     try {
-      await _service.criar(
+      final transacao = await _service.criar(
         descricao: _descricaoController.text.trim(),
         valor: double.parse(_valorController.text.replaceAll(',', '.')),
         tipo: _tipo,
@@ -72,6 +76,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         recorrente: _recorrente,
         frequencia: _recorrente ? _frequencia : null,
       );
+      if (_pendingRecibo != null) {
+        await _reciboService.uploadFileAndSave(_pendingRecibo!, transacao.id);
+      }
       await FirebaseAnalytics.instance.logEvent(
         name: 'criar_transacao',
         parameters: {'tipo': _tipo.toLowerCase()},
@@ -208,7 +215,45 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                       _recorrente && (v == null || v.isEmpty) ? 'Selecione a frequência' : null,
                 ),
               ],
-              const SizedBox(height: 32),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  const Icon(Icons.receipt_long_outlined, size: 20),
+                  const SizedBox(width: 8),
+                  const Text('Recibo', style: TextStyle(fontWeight: FontWeight.w600)),
+                  const Spacer(),
+                  TextButton.icon(
+                    onPressed: () async {
+                      final file = await _reciboService.pickFile();
+                      if (file != null) setState(() => _pendingRecibo = file);
+                    },
+                    icon: const Icon(Icons.upload_outlined, size: 18),
+                    label: Text(_pendingRecibo == null ? 'Anexar' : 'Substituir'),
+                  ),
+                ],
+              ),
+              if (_pendingRecibo != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.attach_file, size: 14, color: Colors.grey),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(_pendingRecibo!.name,
+                            style: const TextStyle(fontSize: 12, color: Colors.grey),
+                            overflow: TextOverflow.ellipsis),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, size: 16),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        onPressed: () => setState(() => _pendingRecibo = null),
+                      ),
+                    ],
+                  ),
+                ),
+              const SizedBox(height: 24),
               FilledButton.icon(
                 onPressed: _loading ? null : _salvar,
                 icon: _loading

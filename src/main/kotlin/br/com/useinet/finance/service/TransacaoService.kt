@@ -151,6 +151,14 @@ class TransacaoService(
     }
 
     @Transactional
+    fun removerRecibo(id: Long, usuario: Usuario) {
+        val transacao = transacaoRepository.findByIdAndUsuario(id, usuario)
+            .orElseThrow { IllegalArgumentException("Transação não encontrada.") }
+        transacao.reciboUrl = null
+        transacaoRepository.save(transacao)
+    }
+
+    @Transactional
     fun deletar(id: Long, usuario: Usuario) {
         val transacao = transacaoRepository.findByIdAndUsuario(id, usuario)
             .orElseThrow { IllegalArgumentException("Transação não encontrada.") }
