@@ -3,13 +3,20 @@ package br.com.useinet.finance.service
 import br.com.useinet.finance.dto.ContaRequest
 import br.com.useinet.finance.dto.ContaResponse
 import br.com.useinet.finance.model.Conta
+import br.com.useinet.finance.model.TipoTransacao
+import br.com.useinet.finance.model.Transacao
 import br.com.useinet.finance.model.Usuario
 import br.com.useinet.finance.repository.ContaRepository
+import br.com.useinet.finance.repository.TransacaoRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDateTime
 
 @Service
-class ContaService(private val contaRepository: ContaRepository) {
+class ContaService(
+    private val contaRepository: ContaRepository,
+    private val transacaoRepository: TransacaoRepository,
+) {
 
     @Transactional(readOnly = true)
     fun listar(usuario: Usuario): List<ContaResponse> =
@@ -18,14 +25,30 @@ class ContaService(private val contaRepository: ContaRepository) {
     @Transactional
     fun criar(request: ContaRequest, usuario: Usuario): ContaResponse {
         validate(request)
+        val saldoInicial = request.saldo ?: 0.0
         val conta = Conta().apply {
             this.nome = requireNotNull(request.nome).trim()
-            this.saldo = request.saldo ?: 0.0
+            this.saldo = 0.0
             this.numeroConta = request.numeroConta?.trim()?.ifBlank { null }
             this.agencia = request.agencia?.trim()?.ifBlank { null }
             this.usuario = usuario
         }
-        return ContaResponse.from(contaRepository.save(conta))
+        val savedConta = contaRepository.save(conta)
+
+        if (saldoInicial > 0.0) {
+            transacaoRepository.save(Transacao().apply {
+                this.descricao = "Saldo inicial – ${savedConta.nome}"
+                this.valor = saldoInicial
+                this.tipo = TipoTransacao.RECEITA
+                this.data = LocalDateTime.now()
+                this.conta = savedConta
+                this.usuario = usuario
+            })
+            savedConta.saldo = saldoInicial
+            contaRepository.save(savedConta)
+        }
+
+        return ContaResponse.from(savedConta)
     }
 
     @Transactional

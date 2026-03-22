@@ -2,15 +2,20 @@ package br.com.useinet.finance.service
 
 import br.com.useinet.finance.dto.ContaRequest
 import br.com.useinet.finance.model.Conta
+import br.com.useinet.finance.model.TipoTransacao
+import br.com.useinet.finance.model.Transacao
 import br.com.useinet.finance.model.Usuario
 import br.com.useinet.finance.repository.ContaRepository
+import br.com.useinet.finance.repository.TransacaoRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.any
 import org.mockito.InjectMocks
 import org.mockito.Mock
+import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
 import org.mockito.junit.jupiter.MockitoExtension
@@ -20,6 +25,7 @@ import java.util.Optional
 class ContaServiceTest {
 
     @Mock lateinit var contaRepository: ContaRepository
+    @Mock lateinit var transacaoRepository: TransacaoRepository
     @InjectMocks lateinit var contaService: ContaService
 
     private fun usuarioMock() = Usuario().apply { nome = "Carlos"; email = "carlos@email.com" }
@@ -37,15 +43,35 @@ class ContaServiceTest {
     }
 
     @Test
-    fun criar_shouldSaveAndReturnConta() {
+    fun criar_shouldCreateTransacaoSaldoInicialWhenSaldoPositive() {
         val usuario = usuarioMock()
-        val saved = Conta().apply { id = 1L; nome = "Poupança"; saldo = 500.0; this.usuario = usuario }
+        val saved = Conta().apply { id = 1L; nome = "Poupança"; saldo = 0.0; this.usuario = usuario }
         `when`(contaRepository.save(any())).thenReturn(saved)
+        `when`(transacaoRepository.save(any())).thenAnswer { it.getArgument(0) }
 
         val response = contaService.criar(ContaRequest(nome = "Poupança", saldo = 500.0), usuario)
+
         assertThat(response.nome).isEqualTo("Poupança")
         assertThat(response.saldo).isEqualTo(500.0)
-        verify(contaRepository).save(any(Conta::class.java))
+
+        val captor = ArgumentCaptor.forClass(Transacao::class.java)
+        verify(transacaoRepository).save(captor.capture())
+        assertThat(captor.value.descricao).isEqualTo("Saldo inicial – Poupança")
+        assertThat(captor.value.valor).isEqualTo(500.0)
+        assertThat(captor.value.tipo).isEqualTo(TipoTransacao.RECEITA)
+        assertThat(captor.value.conta).isEqualTo(saved)
+    }
+
+    @Test
+    fun criar_shouldNotCreateTransacaoWhenSaldoZero() {
+        val usuario = usuarioMock()
+        val saved = Conta().apply { id = 1L; nome = "Zerada"; saldo = 0.0; this.usuario = usuario }
+        `when`(contaRepository.save(any())).thenReturn(saved)
+
+        val response = contaService.criar(ContaRequest(nome = "Zerada", saldo = 0.0), usuario)
+
+        assertThat(response.saldo).isEqualTo(0.0)
+        verify(transacaoRepository, never()).save(any())
     }
 
     @Test
@@ -93,16 +119,6 @@ class ContaServiceTest {
         assertThatThrownBy { contaService.deletar(99L, usuario) }
             .isInstanceOf(IllegalArgumentException::class.java)
             .hasMessageContaining("Conta não encontrada")
-    }
-
-    @Test
-    fun criar_shouldPersistZeroSaldo() {
-        val usuario = usuarioMock()
-        val saved = Conta().apply { id = 1L; nome = "Zerada"; saldo = 0.0; this.usuario = usuario }
-        `when`(contaRepository.save(any())).thenReturn(saved)
-
-        val response = contaService.criar(ContaRequest(nome = "Zerada", saldo = 0.0), usuario)
-        assertThat(response.saldo).isEqualTo(0.0)
     }
 
     @Test
