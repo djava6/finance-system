@@ -12,6 +12,7 @@ import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.Optional
 
@@ -72,6 +73,8 @@ interface TransacaoRepository : JpaRepository<Transacao, Long> {
     ): List<Transacao>
 
     fun findByContaOrderByDataAscIdAsc(conta: Conta): List<Transacao>
+
+    fun findByRecorrenteIsTrueAndProximaOcorrenciaLessThanEqual(data: LocalDate): List<Transacao>
 
     @Query("""
         SELECT COALESCE(SUM(t.valor), 0) FROM Transacao t

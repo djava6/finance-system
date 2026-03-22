@@ -5,16 +5,20 @@ import br.com.useinet.finance.dto.PageResponse
 import br.com.useinet.finance.dto.TransacaoRequest
 import br.com.useinet.finance.dto.TransacaoResponse
 import br.com.useinet.finance.model.Conta
+import br.com.useinet.finance.model.FrequenciaRecorrencia
 import br.com.useinet.finance.model.TipoTransacao
 import br.com.useinet.finance.model.Transacao
 import br.com.useinet.finance.model.Usuario
 import br.com.useinet.finance.repository.CategoriaRepository
 import br.com.useinet.finance.repository.ContaRepository
 import br.com.useinet.finance.repository.TransacaoRepository
+import org.dhatim.fastexcel.Workbook
 import org.apache.commons.csv.CSVFormat
 import org.apache.commons.csv.CSVParser
 import org.apache.commons.csv.CSVRecord
+import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Pageable
+import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.multipart.MultipartFile
@@ -31,16 +35,27 @@ class TransacaoService(
     private val contaRepository: ContaRepository,
     private val orcamentoService: OrcamentoService
 ) {
+    private val log = LoggerFactory.getLogger(TransacaoService::class.java)
 
     @Transactional
     fun criar(request: TransacaoRequest, usuario: Usuario): TransacaoResponse {
         validarRequest(request)
+        if (request.recorrente && request.frequencia == null) {
+            throw IllegalArgumentException("Frequência é obrigatória para transações recorrentes.")
+        }
         val transacao = Transacao().apply {
             this.descricao = request.descricao
             this.valor = request.valor
             this.tipo = request.tipo
             this.data = request.data ?: LocalDateTime.now()
             this.usuario = usuario
+            this.recorrente = request.recorrente
+            this.frequencia = request.frequencia
+            this.proximaOcorrencia = if (request.recorrente) {
+                request.proximaOcorrencia ?: calcularProximaOcorrencia(
+                    (request.data?.toLocalDate() ?: LocalDate.now()), request.frequencia!!
+                )
+            } else null
         }
 
         if (request.categoriaId != null) {
@@ -208,6 +223,43 @@ class TransacaoService(
         return csv.toString().toByteArray(StandardCharsets.UTF_8)
     }
 
+    @Transactional(readOnly = true)
+    fun exportarXlsx(usuario: Usuario, inicio: LocalDateTime?, fim: LocalDateTime?, outputStream: java.io.OutputStream) {
+        val fmtDate = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+
+        val transacoes = if (inicio != null && fim != null)
+            transacaoRepository.findByUsuarioAndDataBetweenOrderByDataAscIdAsc(usuario, inicio, fim)
+        else
+            transacaoRepository.findByUsuarioOrderByDataAscIdAsc(usuario)
+
+        Workbook(outputStream, "Finance System", "1.0").use { wb ->
+            val ws = wb.newWorksheet("Transações")
+
+            // Cabeçalho
+            val headers = listOf("Data", "Descrição", "Tipo", "Categoria", "Conta", "Valor (R$)")
+            headers.forEachIndexed { col, h ->
+                ws.value(0, col, h)
+                ws.style(0, col).fillColor("EEEEEE").bold().set()
+            }
+
+            // Linhas de dados
+            transacoes.forEachIndexed { i, t ->
+                val row = i + 1
+                ws.value(row, 0, t.data?.format(fmtDate))
+                ws.value(row, 1, t.descricao)
+                ws.value(row, 2, if (t.tipo == TipoTransacao.RECEITA) "Receita" else "Despesa")
+                ws.value(row, 3, t.categoria?.nome ?: "Sem categoria")
+                ws.value(row, 4, t.conta?.nome ?: "")
+                ws.value(row, 5, t.valor)
+
+                val color = if (t.tipo == TipoTransacao.RECEITA) "E8F5E9" else "FFEBEE"
+                for (col in 0..5) ws.style(row, col).fillColor(color).set()
+            }
+
+            ws.finish()
+        }
+    }
+
     @Transactional
     fun importarCsv(file: MultipartFile, usuario: Usuario): ImportResultResponse {
         var content = file.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
@@ -316,6 +368,47 @@ class TransacaoService(
         }
 
         return ImportResultResponse(importadas, duplicatas, erros.size, erros)
+    }
+
+    private fun calcularProximaOcorrencia(base: LocalDate, frequencia: FrequenciaRecorrencia): LocalDate =
+        when (frequencia) {
+            FrequenciaRecorrencia.SEMANAL -> base.plusWeeks(1)
+            FrequenciaRecorrencia.MENSAL  -> base.plusMonths(1)
+            FrequenciaRecorrencia.ANUAL   -> base.plusYears(1)
+        }
+
+    @Scheduled(cron = "0 0 6 * * *") // todo dia às 06:00
+    @Transactional
+    fun processarRecorrencias() {
+        val hoje = LocalDate.now()
+        val pendentes = transacaoRepository.findByRecorrenteIsTrueAndProximaOcorrenciaLessThanEqual(hoje)
+        if (pendentes.isEmpty()) return
+
+        log.info("Processando ${pendentes.size} transação(ões) recorrente(s)")
+        for (template in pendentes) {
+            val nova = Transacao().apply {
+                descricao = template.descricao
+                valor = template.valor
+                tipo = template.tipo
+                data = template.proximaOcorrencia!!.atStartOfDay()
+                usuario = template.usuario
+                categoria = template.categoria
+                conta = template.conta
+                recorrente = false
+            }
+            transacaoRepository.save(nova)
+
+            template.conta?.let {
+                ajustarSaldo(it, requireNotNull(template.tipo), requireNotNull(template.valor))
+                contaRepository.save(it)
+            }
+
+            template.proximaOcorrencia = calcularProximaOcorrencia(
+                template.proximaOcorrencia!!, requireNotNull(template.frequencia)
+            )
+            transacaoRepository.save(template)
+        }
+        log.info("Recorrências processadas: ${pendentes.size}")
     }
 
     private fun escapeCsvBr(value: String?): String {

@@ -6,6 +6,7 @@ class ApiConstants {
 
   static const String transactions = '$baseUrl/transactions';
   static const String transactionExportCsv = '$baseUrl/transactions/export/csv';
+  static const String transactionExportXlsx = '$baseUrl/transactions/export/xlsx';
   static const String transactionImport = '$baseUrl/transactions/import';
   static const String dashboard = '$baseUrl/dashboard';
   static const String categories = '$baseUrl/categories';

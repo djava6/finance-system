@@ -1,9 +1,11 @@
 package br.com.useinet.finance.dto
 
+import br.com.useinet.finance.model.FrequenciaRecorrencia
 import br.com.useinet.finance.model.TipoTransacao
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Positive
+import java.time.LocalDate
 import java.time.LocalDateTime
 
 data class TransacaoRequest(
@@ -19,5 +21,8 @@ data class TransacaoRequest(
 
     val data: LocalDateTime? = null,
     val categoriaId: Long? = null,
-    val contaId: Long? = null
+    val contaId: Long? = null,
+    val recorrente: Boolean = false,
+    val frequencia: FrequenciaRecorrencia? = null,
+    val proximaOcorrencia: LocalDate? = null
 )

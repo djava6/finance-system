@@ -57,6 +57,9 @@ class TransactionService {
     required String tipo,
     int? categoriaId,
     int? contaId,
+    bool recorrente = false,
+    String? frequencia,
+    DateTime? proximaOcorrencia,
   }) async {
     final response = await _client.post(
       Uri.parse(ApiConstants.transactions),
@@ -66,6 +69,13 @@ class TransactionService {
         'tipo': tipo,
         if (categoriaId != null) 'categoriaId': categoriaId,
         if (contaId != null) 'contaId': contaId,
+        'recorrente': recorrente,
+        if (frequencia != null) 'frequencia': frequencia,
+        if (proximaOcorrencia != null)
+          'proximaOcorrencia':
+              '${proximaOcorrencia.year.toString().padLeft(4, '0')}-'
+              '${proximaOcorrencia.month.toString().padLeft(2, '0')}-'
+              '${proximaOcorrencia.day.toString().padLeft(2, '0')}',
       }),
     );
     if (response.statusCode == 201) {
@@ -117,6 +127,16 @@ class TransactionService {
       return response.bodyBytes.toList();
     }
     throw Exception('Erro ao exportar CSV');
+  }
+
+  Future<List<int>> exportarXlsx() async {
+    final response = await _client.get(
+      Uri.parse(ApiConstants.transactionExportXlsx),
+    );
+    if (response.statusCode == 200) {
+      return response.bodyBytes.toList();
+    }
+    throw Exception('Erro ao exportar Excel');
   }
 
   Future<Map<String, dynamic>> importarCsv(List<int> fileBytes, String fileName) async {

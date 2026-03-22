@@ -20,6 +20,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   String _tipo = 'DESPESA';
   int? _categoriaId;
   int? _contaId;
+  bool _recorrente = false;
+  String? _frequencia;
   List<CategoriaModel> _categorias = [];
   List<ContaModel> _contas = [];
   bool _loading = false;
@@ -67,6 +69,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         tipo: _tipo,
         categoriaId: _categoriaId,
         contaId: _contaId,
+        recorrente: _recorrente,
+        frequencia: _recorrente ? _frequencia : null,
       );
       await FirebaseAnalytics.instance.logEvent(
         name: 'criar_transacao',
@@ -174,6 +178,36 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                 ],
                 onChanged: (v) => setState(() => _contaId = v),
               ),
+              const SizedBox(height: 16),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Transação recorrente'),
+                secondary: const Icon(Icons.repeat),
+                value: _recorrente,
+                onChanged: (v) => setState(() {
+                  _recorrente = v;
+                  if (!v) _frequencia = null;
+                }),
+              ),
+              if (_recorrente) ...[
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  value: _frequencia,
+                  decoration: const InputDecoration(
+                    labelText: 'Frequência',
+                    prefixIcon: Icon(Icons.calendar_today_outlined),
+                    border: OutlineInputBorder(),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'SEMANAL', child: Text('Semanal')),
+                    DropdownMenuItem(value: 'MENSAL', child: Text('Mensal')),
+                    DropdownMenuItem(value: 'ANUAL', child: Text('Anual')),
+                  ],
+                  onChanged: (v) => setState(() => _frequencia = v),
+                  validator: (v) =>
+                      _recorrente && (v == null || v.isEmpty) ? 'Selecione a frequência' : null,
+                ),
+              ],
               const SizedBox(height: 32),
               FilledButton.icon(
                 onPressed: _loading ? null : _salvar,

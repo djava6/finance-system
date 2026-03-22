@@ -8,6 +8,9 @@ class TransactionModel {
   final String? categoria;
   final int? contaId;
   final String? conta;
+  final bool recorrente;
+  final String? frequencia; // SEMANAL | MENSAL | ANUAL
+  final DateTime? proximaOcorrencia;
 
   TransactionModel({
     required this.id,
@@ -19,6 +22,9 @@ class TransactionModel {
     this.categoria,
     this.contaId,
     this.conta,
+    this.recorrente = false,
+    this.frequencia,
+    this.proximaOcorrencia,
   });
 
   bool get isReceita => tipo == 'RECEITA';
@@ -34,5 +40,10 @@ class TransactionModel {
         categoria: json['categoria'] as String?,
         contaId: json['contaId'] as int?,
         conta: json['conta'] as String?,
+        recorrente: json['recorrente'] as bool? ?? false,
+        frequencia: json['frequencia'] as String?,
+        proximaOcorrencia: json['proximaOcorrencia'] != null
+            ? DateTime.parse(json['proximaOcorrencia'] as String)
+            : null,
       );
 }

@@ -72,6 +72,9 @@ dependencies {
     // CSV parsing (importação de transações)
     implementation("org.apache.commons:commons-csv:1.12.0")
 
+    // Excel export
+    implementation("org.dhatim:fastexcel:0.18.4")
+
     // Local dev
     implementation("me.paulschwarz:spring-dotenv:4.0.0")
 

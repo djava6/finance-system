@@ -1,7 +1,9 @@
 package br.com.useinet.finance.dto
 
+import br.com.useinet.finance.model.FrequenciaRecorrencia
 import br.com.useinet.finance.model.TipoTransacao
 import br.com.useinet.finance.model.Transacao
+import java.time.LocalDate
 import java.time.LocalDateTime
 
 data class TransacaoResponse(
@@ -13,7 +15,10 @@ data class TransacaoResponse(
     val categoriaId: Long?,
     val categoria: String?,
     val contaId: Long?,
-    val conta: String?
+    val conta: String?,
+    val recorrente: Boolean,
+    val frequencia: FrequenciaRecorrencia?,
+    val proximaOcorrencia: LocalDate?
 ) {
     companion object {
         fun from(t: Transacao) = TransacaoResponse(
@@ -25,7 +30,10 @@ data class TransacaoResponse(
             categoriaId = t.categoria?.id,
             categoria = t.categoria?.nome,
             contaId = t.conta?.id,
-            conta = t.conta?.nome
+            conta = t.conta?.nome,
+            recorrente = t.recorrente,
+            frequencia = t.frequencia,
+            proximaOcorrencia = t.proximaOcorrencia
         )
     }
 }

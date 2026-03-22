@@ -157,6 +157,25 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
     }
   }
 
+  Future<void> _exportarXlsx() async {
+    try {
+      final bytes = await _service.exportarXlsx();
+      await saveFile(bytes, 'transacoes.xlsx');
+      await FirebaseAnalytics.instance.logEvent(name: 'exportar_xlsx');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Excel exportado com sucesso')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+        );
+      }
+    }
+  }
+
   Future<void> _importarCsv() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
@@ -252,6 +271,11 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
             icon: const Icon(Icons.download_outlined),
             tooltip: 'Exportar CSV',
             onPressed: _exportarCsv,
+          ),
+          IconButton(
+            icon: const Icon(Icons.table_chart_outlined),
+            tooltip: 'Exportar Excel',
+            onPressed: _exportarXlsx,
           ),
         ],
       ),

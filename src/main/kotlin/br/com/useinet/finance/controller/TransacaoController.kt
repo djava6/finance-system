@@ -13,6 +13,7 @@ import jakarta.validation.Valid
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.format.annotation.DateTimeFormat
+import jakarta.servlet.http.HttpServletResponse
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -78,6 +79,22 @@ class TransacaoController(private val transacaoService: TransacaoService) {
     fun deletar(@PathVariable id: Long, @AuthenticationPrincipal usuario: Usuario): ResponseEntity<Void> {
         transacaoService.deletar(id, usuario)
         return ResponseEntity.noContent().build()
+    }
+
+    @GetMapping("/export/xlsx", produces = ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"])
+    @Operation(summary = "Exportar XLSX", description = "Baixa transações do usuário em Excel. Filtro opcional por período (inicio/fim no formato yyyy-MM-dd). Receitas em verde, despesas em vermelho.")
+    fun exportarXlsx(
+        @AuthenticationPrincipal usuario: Usuario,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) inicio: LocalDate?,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) fim: LocalDate?,
+        response: HttpServletResponse
+    ) {
+        val dtInicio = inicio?.atStartOfDay()
+        val dtFim = fim?.atTime(23, 59, 59)
+        response.contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        response.setHeader(HttpHeaders.CONTENT_DISPOSITION,
+            "attachment; filename=\"transacoes_${LocalDate.now()}.xlsx\"")
+        transacaoService.exportarXlsx(usuario, dtInicio, dtFim, response.outputStream)
     }
 
     @GetMapping("/export/csv")

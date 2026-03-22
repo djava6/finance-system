@@ -1,6 +1,7 @@
 package br.com.useinet.finance.model
 
 import jakarta.persistence.*
+import java.time.LocalDate
 import java.time.LocalDateTime
 
 @Entity
@@ -32,4 +33,12 @@ class Transacao {
 
     @ManyToOne
     var usuario: Usuario? = null
+
+    @Column(nullable = false)
+    var recorrente: Boolean = false
+
+    @Enumerated(EnumType.STRING)
+    var frequencia: FrequenciaRecorrencia? = null
+
+    var proximaOcorrencia: LocalDate? = null
 }
