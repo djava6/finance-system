@@ -56,15 +56,16 @@ class ContaServiceTest {
     }
 
     @Test
-    fun atualizar_shouldUpdateAndReturnConta() {
+    fun atualizar_shouldUpdateNomeAndNotOverwriteSaldo() {
         val usuario = usuarioMock()
         val existing = Conta().apply { id = 1L; nome = "Antigo"; saldo = 100.0 }
         `when`(contaRepository.findByIdAndUsuario(1L, usuario)).thenReturn(Optional.of(existing))
         `when`(contaRepository.save(any())).thenAnswer { it.getArgument(0) }
 
+        // saldo sent by client must be ignored — only nome/numeroConta/agencia are editable
         val response = contaService.atualizar(1L, ContaRequest(nome = "Novo", saldo = 200.0), usuario)
         assertThat(response.nome).isEqualTo("Novo")
-        assertThat(response.saldo).isEqualTo(200.0)
+        assertThat(response.saldo).isEqualTo(100.0) // saldo unchanged
     }
 
     @Test
@@ -105,13 +106,13 @@ class ContaServiceTest {
     }
 
     @Test
-    fun atualizar_shouldPersistNegativeSaldo() {
+    fun atualizar_shouldNotOverwriteSaldoEvenWhenClientSendsNegative() {
         val usuario = usuarioMock()
         val existing = Conta().apply { id = 1L; nome = "Antiga"; saldo = 100.0 }
         `when`(contaRepository.findByIdAndUsuario(1L, usuario)).thenReturn(Optional.of(existing))
         `when`(contaRepository.save(any())).thenAnswer { it.getArgument(0) }
 
         val response = contaService.atualizar(1L, ContaRequest(nome = "Antiga", saldo = -50.0), usuario)
-        assertThat(response.saldo).isEqualTo(-50.0)
+        assertThat(response.saldo).isEqualTo(100.0) // saldo must not be overwritten by client
     }
 }

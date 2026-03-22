@@ -34,7 +34,6 @@ class ContaService(private val contaRepository: ContaRepository) {
         val conta = contaRepository.findByIdAndUsuario(id, usuario)
             .orElseThrow { IllegalArgumentException("Conta não encontrada.") }
         conta.nome = requireNotNull(request.nome).trim()
-        if (request.saldo != null) conta.saldo = request.saldo
         conta.numeroConta = request.numeroConta?.trim()?.ifBlank { null }
         conta.agencia = request.agencia?.trim()?.ifBlank { null }
         return ContaResponse.from(contaRepository.save(conta))
