@@ -65,16 +65,17 @@ class CsvExportTest {
     }
 
     @Test
-    fun exportarCsv_shouldContainCorrectColumnHeaders() {
+    fun exportarCsv_shouldUseSemicolonAsDelimiter() {
         val usuario = usuarioMock()
         `when`(transacaoRepository.findByUsuarioOrderByDataDesc(usuario)).thenReturn(emptyList())
 
         val content = String(exportAll(usuario), StandardCharsets.UTF_8)
-        assertThat(content).contains("ID,Descrição,Valor,Tipo,Data,Categoria,Conta,Saldo da Conta")
+        assertThat(content).contains("ID;Descrição;Valor;Tipo;Data;Categoria;Conta;Saldo da Conta")
+        assertThat(content).doesNotContain("ID,")
     }
 
     @Test
-    fun exportarCsv_shouldFormatValorWithTwoDecimalPlaces() {
+    fun exportarCsv_shouldFormatValorWithCommaDecimal() {
         val usuario = usuarioMock()
         val t = Transacao().apply {
             id = 1L; descricao = "Salário"; valor = 5000.0
@@ -83,8 +84,8 @@ class CsvExportTest {
         `when`(transacaoRepository.findByUsuarioOrderByDataDesc(usuario)).thenReturn(listOf(t))
 
         val content = String(exportAll(usuario), StandardCharsets.UTF_8)
-        assertThat(content).contains("5000.00")
-        assertThat(content).doesNotContain("5000.0,")
+        assertThat(content).contains("5000,00")
+        assertThat(content).doesNotContain("5000.00")
     }
 
     @Test
@@ -119,7 +120,7 @@ class CsvExportTest {
         `when`(transacaoRepository.findByUsuarioOrderByDataDesc(usuario)).thenReturn(listOf(t))
 
         val content = String(exportAll(usuario), StandardCharsets.UTF_8)
-        assertThat(content).contains("Nubank,1975.00")
+        assertThat(content).contains("Nubank;1975,00")
     }
 
     @Test
@@ -136,9 +137,9 @@ class CsvExportTest {
         `when`(transacaoRepository.findByUsuarioOrderByDataDesc(usuario)).thenReturn(listOf(receita, despesa))
 
         val content = String(exportAll(usuario), StandardCharsets.UTF_8)
-        assertThat(content).contains("\"1000.00\"")
-        assertThat(content).contains("\"25.00\"")
-        assertThat(content).contains("\"975.00\"")
+        assertThat(content).contains(";1000,00")
+        assertThat(content).contains(";25,00")
+        assertThat(content).contains(";975,00")
     }
 
     @Test
@@ -175,16 +176,16 @@ class CsvExportTest {
     }
 
     @Test
-    fun exportarCsv_shouldEscapeCommasInDescricao() {
+    fun exportarCsv_shouldEscapeSemicolonsInDescricao() {
         val usuario = usuarioMock()
         val t = Transacao().apply {
-            id = 3L; descricao = "Salário, bônus"; valor = 100.0
+            id = 3L; descricao = "Salário; bônus"; valor = 100.0
             tipo = TipoTransacao.RECEITA; data = LocalDateTime.of(2026, 3, 15, 8, 0)
         }
         `when`(transacaoRepository.findByUsuarioOrderByDataDesc(usuario)).thenReturn(listOf(t))
 
         val content = String(exportAll(usuario), StandardCharsets.UTF_8)
-        assertThat(content).contains("\"Salário, bônus\"")
+        assertThat(content).contains("\"Salário; bônus\"")
     }
 
     // ─── importarCsv ──────────────────────────────────────────────────────────
@@ -196,15 +197,15 @@ class CsvExportTest {
         return MockMultipartFile("file", "import.csv", "text/csv", content.toByteArray(Charsets.UTF_8))
     }
 
-    /** Export-format CSV (BOM + summary lines + export column names + dd/MM/yyyy HH:mm dates) */
+    /** Export-format CSV (BOM + summary lines + semicolon separator + dd/MM/yyyy HH:mm dates) */
     private fun exportCsv(vararg rows: String): MockMultipartFile {
         val summary = listOf(
-            "\uFEFFPeríodo:,Todas as transações",
-            "Total Receitas:,\"1000.00\"",
-            "Total Despesas:,\"0.00\"",
-            "Saldo:,\"1000.00\"",
+            "\uFEFFPeríodo:;Todas as transações",
+            "Total Receitas:;1000,00",
+            "Total Despesas:;0,00",
+            "Saldo:;1000,00",
             "",
-            "ID,Descrição,Valor,Tipo,Data,Categoria,Conta,Saldo da Conta"
+            "ID;Descrição;Valor;Tipo;Data;Categoria;Conta;Saldo da Conta"
         )
         val content = (summary + rows).joinToString("\n")
         return MockMultipartFile("file", "export.csv", "text/csv", content.toByteArray(Charsets.UTF_8))
@@ -337,10 +338,10 @@ class CsvExportTest {
         `when`(transacaoRepository.existsByUsuarioAndDataAndValorAndDescricao(any(), any(), any(), any())).thenReturn(false)
         `when`(transacaoRepository.save(any())).thenAnswer { it.getArgument(0) }
 
-        // Rows in the export column order: ID,Descrição,Valor,Tipo,Data,Categoria,Conta,Saldo da Conta
+        // Rows in the export column order: ID;Descrição;Valor;Tipo;Data;Categoria;Conta;Saldo da Conta
         val file = exportCsv(
-            "1,Salário,5000.00,Receita,15/03/2026 10:00,,Nubank,5000.00",
-            "2,Mercado,200.00,Despesa,15/03/2026 12:00,Alimentação,Nubank,4800.00"
+            "1;Salário;5000,00;Receita;15/03/2026 10:00;;Nubank;5000,00",
+            "2;Mercado;200,00;Despesa;15/03/2026 12:00;Alimentação;Nubank;4800,00"
         )
         val result = transacaoService.importarCsv(file, usuario)
 
@@ -356,7 +357,7 @@ class CsvExportTest {
         `when`(transacaoRepository.existsByUsuarioAndDataAndValorAndDescricao(any(), any(), any(), any())).thenReturn(false)
         `when`(transacaoRepository.save(any())).thenAnswer { it.getArgument(0) }
 
-        val file = exportCsv("1,Pagamento,100.00,Despesa,20/03/2026 09:00,,Carteira,900.00")
+        val file = exportCsv("1;Pagamento;100,00;Despesa;20/03/2026 09:00;;Carteira;900,00")
         val result = transacaoService.importarCsv(file, usuario)
 
         assertThat(result.erros).isEqualTo(0)
@@ -374,7 +375,7 @@ class CsvExportTest {
             t
         }
 
-        val file = exportCsv("3,Almoço,35.50,Despesa,21/03/2026 13:30,,Carteira,")
+        val file = exportCsv("3;Almoço;35,50;Despesa;21/03/2026 13:30;;Carteira;")
         transacaoService.importarCsv(file, usuario)
 
         assertThat(saved).hasSize(1)

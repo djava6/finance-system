@@ -162,30 +162,32 @@ class TransacaoService(
             "${inicio.format(fmtDate)} a ${fim.format(fmtDate)}"
         else "Todas as transações"
 
+        fun fmtDecimal(v: Double) = "%.2f".format(v).replace(".", ",")
+
         val csv = StringBuilder()
         csv.append('\uFEFF') // BOM para compatibilidade com Excel
 
         // Resumo
-        csv.append("Período:,${escapeCsv(periodo)}\n")
-        csv.append("Total Receitas:,\"${"%.2f".format(totalReceitas)}\"\n")
-        csv.append("Total Despesas:,\"${"%.2f".format(totalDespesas)}\"\n")
-        csv.append("Saldo:,\"${"%.2f".format(saldo)}\"\n")
+        csv.append("Período:;${escapeCsvBr(periodo)}\n")
+        csv.append("Total Receitas:;${fmtDecimal(totalReceitas)}\n")
+        csv.append("Total Despesas:;${fmtDecimal(totalDespesas)}\n")
+        csv.append("Saldo:;${fmtDecimal(saldo)}\n")
         csv.append("\n")
 
         // Cabeçalho
-        csv.append("ID,Descrição,Valor,Tipo,Data,Categoria,Conta,Saldo da Conta\n")
+        csv.append("ID;Descrição;Valor;Tipo;Data;Categoria;Conta;Saldo da Conta\n")
 
         // Linhas
         transacoes.forEach { t ->
             val tipoLegivel = if (t.tipo == TipoTransacao.RECEITA) "Receita" else "Despesa"
-            csv.append(t.id).append(',')
-                .append(escapeCsv(t.descricao)).append(',')
-                .append("%.2f".format(t.valor ?: 0.0)).append(',')
-                .append(tipoLegivel).append(',')
-                .append(requireNotNull(t.data).format(fmtDateTime)).append(',')
-                .append(t.categoria?.let { escapeCsv(it.nome) } ?: "").append(',')
-                .append(t.conta?.let { escapeCsv(it.nome) } ?: "").append(',')
-                .append(t.conta?.saldo?.let { "%.2f".format(it) } ?: "")
+            csv.append(t.id).append(';')
+                .append(escapeCsvBr(t.descricao)).append(';')
+                .append(fmtDecimal(t.valor ?: 0.0)).append(';')
+                .append(tipoLegivel).append(';')
+                .append(requireNotNull(t.data).format(fmtDateTime)).append(';')
+                .append(t.categoria?.let { escapeCsvBr(it.nome) } ?: "").append(';')
+                .append(t.conta?.let { escapeCsvBr(it.nome) } ?: "").append(';')
+                .append(t.conta?.saldo?.let { fmtDecimal(it) } ?: "")
                 .append('\n')
         }
 
@@ -206,14 +208,16 @@ class TransacaoService(
                 lower.contains("descrição") || lower.contains("descricao")
         }
         val effectiveHeaderIndex = if (headerIndex >= 0) headerIndex else 0
-        // Parse column names from the actual header line to use as explicit headers
+        // Detect separator and parse column names from the actual header line
         val headerLine = lines[effectiveHeaderIndex].trimStart('\uFEFF')
-        val explicitHeaders = headerLine.split(",").map { it.trim().trim('"') }
+        val separator = if (headerLine.contains(';')) ';' else ','
+        val explicitHeaders = headerLine.split(separator).map { it.trim().trim('"') }
         val csvContent = lines.drop(effectiveHeaderIndex + 1).joinToString("\n")
 
         val fmtExport = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
 
         val csvFormat = CSVFormat.DEFAULT.builder()
+            .setDelimiter(separator)
             .setHeader(*explicitHeaders.toTypedArray())
             .setIgnoreEmptyLines(true)
             .setTrim(true)
@@ -288,9 +292,9 @@ class TransacaoService(
         return ImportResultResponse(importadas, duplicatas, erros.size, erros)
     }
 
-    private fun escapeCsv(value: String?): String {
+    private fun escapeCsvBr(value: String?): String {
         if (value == null) return ""
-        return if (value.contains(",") || value.contains("\"") || value.contains("\n"))
+        return if (value.contains(";") || value.contains("\"") || value.contains("\n"))
             "\"${value.replace("\"", "\"\"")}\""
         else value
     }

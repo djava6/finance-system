@@ -127,7 +127,7 @@ class TransacaoControllerIT : IntegrationTestBase() {
         val response = restTemplate.exchange("/transactions/export/csv", HttpMethod.GET, HttpEntity<Any>(authHeaders()), ByteArray::class.java)
         val csv = String(response.body!!, StandardCharsets.UTF_8)
         // verify the full column header structure, not just the presence of "Conta"
-        assertThat(csv).contains("ID,Descrição,Valor,Tipo,Data,Categoria,Conta,Saldo da Conta")
+        assertThat(csv).contains("ID;Descrição;Valor;Tipo;Data;Categoria;Conta;Saldo da Conta")
         assertThat(csv).contains("CSV Conta")
     }
 
