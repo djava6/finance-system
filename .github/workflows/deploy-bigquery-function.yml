@@ -43,7 +43,7 @@ jobs:
             --source=bigquery-export-function/build/libs \
             --entry-point=br.com.useinet.finance.BigQueryExportFunction \
             --trigger-http \
-            --allow-unauthenticated=false \
+            --no-allow-unauthenticated \
             --service-account=finance-system-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com \
             --memory=512Mi \
             --timeout=540s \
