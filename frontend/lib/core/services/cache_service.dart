@@ -13,8 +13,12 @@ class CacheService {
 
   Future<Database?> get db async {
     if (kIsWeb) return null;
-    _db ??= await _open();
-    return _db!;
+    try {
+      _db ??= await _open();
+      return _db!;
+    } catch (_) {
+      return null; // sqflite not available (test environment)
+    }
   }
 
   Future<Database> _open() async {

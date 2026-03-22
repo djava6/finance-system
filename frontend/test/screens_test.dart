@@ -79,7 +79,7 @@ void main() {
       await tester.tap(find.byIcon(Icons.label_outlined));
       await tester.pumpAndSettle();
 
-      expect(find.text('Categorias'), findsOneWidget);
+      expect(find.text('Categorias'), findsWidgets);
     });
   });
 

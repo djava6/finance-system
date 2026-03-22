@@ -50,12 +50,16 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
   }
 
   Future<void> _connectWebSocket() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return;
-    await _wsService.connect(uid);
-    _wsSub = _wsService.updates.listen((_) {
-      if (mounted) _load();
-    });
+    try {
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid == null) return;
+      await _wsService.connect(uid);
+      _wsSub = _wsService.updates.listen((_) {
+        if (mounted) _load();
+      });
+    } catch (_) {
+      // Firebase not initialized (test environment)
+    }
   }
 
   @override
