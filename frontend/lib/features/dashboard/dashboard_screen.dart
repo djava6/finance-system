@@ -153,7 +153,7 @@ class _HomeTabState extends State<_HomeTab> {
         _metaService.listar().catchError((_) => <MetaModel>[]),
       ]);
       if (mounted) {
-        _data = results[0] as DashboardModel;
+        _data = (results[0] as (DashboardModel, bool, DateTime?)).$1;
         _orcamentosAlerta = (results[1] as List<OrcamentoModel>)
             .where((o) => o.percentual >= 80)
             .toList();

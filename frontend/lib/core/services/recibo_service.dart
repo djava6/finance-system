@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'transaction_service.dart';
 import '../models/transaction_model.dart';
 
@@ -17,21 +18,28 @@ class ReciboService {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: _allowedExtensions,
-      withData: false,
+      withData: kIsWeb,
     );
     if (result == null || result.files.isEmpty) return null;
 
     final picked = result.files.first;
-    final file = File(picked.path!);
-    final size = await file.length();
-    if (size > _maxBytes) throw Exception('Arquivo muito grande (máx 10 MB).');
-
     final uid = FirebaseAuth.instance.currentUser!.uid;
     final ext = picked.extension ?? 'jpg';
     final ref = FirebaseStorage.instance
         .ref('recibos/$uid/$transacaoId/recibo.$ext');
 
-    await ref.putFile(file);
+    if (kIsWeb) {
+      final bytes = picked.bytes;
+      if (bytes == null) throw Exception('Não foi possível ler o arquivo.');
+      if (bytes.length > _maxBytes) throw Exception('Arquivo muito grande (máx 10 MB).');
+      await ref.putData(bytes);
+    } else {
+      final file = File(picked.path!);
+      final size = await file.length();
+      if (size > _maxBytes) throw Exception('Arquivo muito grande (máx 10 MB).');
+      await ref.putFile(file);
+    }
+
     final url = await ref.getDownloadURL();
     return await _txService.salvarReciboUrl(transacaoId, url);
   }
