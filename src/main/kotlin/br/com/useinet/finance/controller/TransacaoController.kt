@@ -2,6 +2,7 @@ package br.com.useinet.finance.controller
 
 import br.com.useinet.finance.dto.ImportResultResponse
 import br.com.useinet.finance.dto.PageResponse
+import br.com.useinet.finance.dto.ReciboUrlRequest
 import br.com.useinet.finance.dto.TransacaoRequest
 import br.com.useinet.finance.dto.TransacaoResponse
 import br.com.useinet.finance.model.Usuario
@@ -70,6 +71,15 @@ class TransacaoController(private val transacaoService: TransacaoService) {
         @AuthenticationPrincipal usuario: Usuario
     ): ResponseEntity<TransacaoResponse> =
         ResponseEntity.ok(transacaoService.atualizar(id, request, usuario))
+
+    @PatchMapping("/{id}/recibo")
+    @Operation(summary = "Salvar URL do recibo", description = "Associa a URL do Firebase Storage ao recibo da transação")
+    fun atualizarRecibo(
+        @PathVariable id: Long,
+        @Valid @RequestBody request: ReciboUrlRequest,
+        @AuthenticationPrincipal usuario: Usuario
+    ): ResponseEntity<TransacaoResponse> =
+        ResponseEntity.ok(transacaoService.atualizarRecibo(id, request, usuario))
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Excluir transação", description = "Remove uma transação do usuário logado")

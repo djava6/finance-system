@@ -17,7 +17,8 @@ data class TransacaoResponse(
     val conta: String?,
     val recorrente: Boolean,
     val frequencia: FrequenciaRecorrencia?,
-    val proximaOcorrencia: LocalDate?
+    val proximaOcorrencia: LocalDate?,
+    val reciboUrl: String?
 ) {
     companion object {
         fun from(t: Transacao) = TransacaoResponse(
@@ -32,7 +33,8 @@ data class TransacaoResponse(
             conta = t.conta?.nome,
             recorrente = t.recorrente,
             frequencia = t.frequencia,
-            proximaOcorrencia = t.proximaOcorrencia
+            proximaOcorrencia = t.proximaOcorrencia,
+            reciboUrl = t.reciboUrl
         )
     }
 }

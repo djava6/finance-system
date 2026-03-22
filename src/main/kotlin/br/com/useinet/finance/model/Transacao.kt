@@ -40,4 +40,7 @@ class Transacao {
     var frequencia: FrequenciaRecorrencia? = null
 
     var proximaOcorrencia: LocalDate? = null
+
+    @Column(length = 500)
+    var reciboUrl: String? = null
 }

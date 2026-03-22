@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/models/categoria_model.dart';
 import '../../core/models/conta_model.dart';
 import '../../core/models/transaction_model.dart';
 import '../../core/services/categoria_service.dart';
 import '../../core/services/conta_service.dart';
+import '../../core/services/recibo_service.dart';
 import '../../core/services/transaction_service.dart';
 
 class EditTransactionScreen extends StatefulWidget {
@@ -29,6 +31,9 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
   final _service = TransactionService();
   final _categoriaService = CategoriaService();
   final _contaService = ContaService();
+  final _reciboService = ReciboService();
+  bool _uploadingRecibo = false;
+  String? _reciboUrl;
 
   @override
   void initState() {
@@ -38,6 +43,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
     _valorController =
         TextEditingController(text: widget.transaction.valor.toStringAsFixed(2));
     _tipo = widget.transaction.tipo;
+    _reciboUrl = widget.transaction.reciboUrl;
     _loadData();
   }
 
@@ -63,6 +69,27 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
     _descricaoController.dispose();
     _valorController.dispose();
     super.dispose();
+  }
+
+  Future<void> _uploadRecibo() async {
+    setState(() => _uploadingRecibo = true);
+    try {
+      final updated = await _reciboService.uploadAndSave(widget.transaction.id);
+      if (updated != null && mounted) {
+        setState(() => _reciboUrl = updated.reciboUrl);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Recibo salvo com sucesso')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _uploadingRecibo = false);
+    }
   }
 
   Future<void> _salvar() async {
@@ -177,6 +204,12 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
                 ],
                 onChanged: (v) => setState(() => _contaId = v),
               ),
+              const SizedBox(height: 24),
+              _ReciboWidget(
+                url: _reciboUrl,
+                uploading: _uploadingRecibo,
+                onUpload: _uploadRecibo,
+              ),
               const SizedBox(height: 32),
               FilledButton.icon(
                 onPressed: _loading ? null : _salvar,
@@ -192,6 +225,69 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _ReciboWidget extends StatelessWidget {
+  final String? url;
+  final bool uploading;
+  final VoidCallback onUpload;
+
+  const _ReciboWidget({
+    required this.url,
+    required this.uploading,
+    required this.onUpload,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.receipt_long_outlined, size: 20),
+            const SizedBox(width: 8),
+            const Text('Recibo', style: TextStyle(fontWeight: FontWeight.w600)),
+            const Spacer(),
+            if (uploading)
+              const SizedBox(
+                  width: 20, height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2))
+            else
+              TextButton.icon(
+                onPressed: onUpload,
+                icon: const Icon(Icons.upload_outlined, size: 18),
+                label: Text(url == null ? 'Anexar' : 'Substituir'),
+              ),
+          ],
+        ),
+        if (url != null)
+          InkWell(
+            onTap: () => launchUrl(Uri.parse(url!),
+                mode: LaunchMode.externalApplication),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.green.shade300),
+                borderRadius: BorderRadius.circular(8),
+                color: Colors.green.shade50,
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.check_circle_outline,
+                      color: Colors.green.shade700, size: 18),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text('Ver recibo anexado',
+                        style: TextStyle(decoration: TextDecoration.underline)),
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

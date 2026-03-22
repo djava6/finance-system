@@ -11,6 +11,7 @@ class TransactionModel {
   final bool recorrente;
   final String? frequencia; // SEMANAL | MENSAL | ANUAL
   final DateTime? proximaOcorrencia;
+  final String? reciboUrl;
 
   TransactionModel({
     required this.id,
@@ -25,6 +26,7 @@ class TransactionModel {
     this.recorrente = false,
     this.frequencia,
     this.proximaOcorrencia,
+    this.reciboUrl,
   });
 
   bool get isReceita => tipo == 'RECEITA';
@@ -45,5 +47,6 @@ class TransactionModel {
         proximaOcorrencia: json['proximaOcorrencia'] != null
             ? DateTime.parse(json['proximaOcorrencia'] as String)
             : null,
+        reciboUrl: json['reciboUrl'] as String?,
       );
 }

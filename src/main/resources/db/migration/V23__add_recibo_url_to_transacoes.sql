@@ -1,0 +1,1 @@
+ALTER TABLE transacoes ADD COLUMN IF NOT EXISTS recibo_url VARCHAR(500);

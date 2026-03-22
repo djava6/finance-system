@@ -55,6 +55,28 @@ class DashboardModel {
     required this.evolucaoMensal,
   });
 
+  Map<String, dynamic> toJson() => {
+    'saldo': saldo,
+    'totalReceitas': totalReceitas,
+    'totalDespesas': totalDespesas,
+    'contas': contas.map((c) => c.toJson()).toList(),
+    'ultimasTransacoes': ultimasTransacoes.map((t) => {
+      'id': t.id, 'descricao': t.descricao, 'valor': t.valor,
+      'tipo': t.tipo, 'data': t.data.toIso8601String(),
+      'categoriaId': t.categoriaId, 'categoria': t.categoria,
+      'contaId': t.contaId, 'conta': t.conta,
+      'recorrente': t.recorrente, 'frequencia': t.frequencia,
+      'proximaOcorrencia': t.proximaOcorrencia?.toIso8601String(),
+      'reciboUrl': t.reciboUrl,
+    }).toList(),
+    'despesasPorCategoria': despesasPorCategoria
+        .map((d) => {'categoria': d.categoria, 'total': d.total}).toList(),
+    'evolucaoMensal': evolucaoMensal.map((e) => {
+      'ano': e.ano, 'mes': e.mes,
+      'totalReceitas': e.totalReceitas, 'totalDespesas': e.totalDespesas,
+    }).toList(),
+  };
+
   factory DashboardModel.fromJson(Map<String, dynamic> json) {
     return DashboardModel(
       saldo: (json['saldo'] as num).toDouble(),

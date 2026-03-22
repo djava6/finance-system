@@ -2,6 +2,7 @@ package br.com.useinet.finance.service
 
 import br.com.useinet.finance.dto.ImportResultResponse
 import br.com.useinet.finance.dto.PageResponse
+import br.com.useinet.finance.dto.ReciboUrlRequest
 import br.com.useinet.finance.dto.TransacaoRequest
 import br.com.useinet.finance.dto.TransacaoResponse
 import br.com.useinet.finance.model.Conta
@@ -129,6 +130,14 @@ class TransacaoService(
             transacao.conta = null
         }
 
+        return TransacaoResponse.from(transacaoRepository.save(transacao))
+    }
+
+    @Transactional
+    fun atualizarRecibo(id: Long, request: ReciboUrlRequest, usuario: Usuario): TransacaoResponse {
+        val transacao = transacaoRepository.findByIdAndUsuario(id, usuario)
+            .orElseThrow { IllegalArgumentException("Transação não encontrada.") }
+        transacao.reciboUrl = request.reciboUrl
         return TransacaoResponse.from(transacaoRepository.save(transacao))
     }
 

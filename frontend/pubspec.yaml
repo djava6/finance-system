@@ -28,6 +28,10 @@ dependencies:
   sentry_flutter: ^8.10.0
   file_picker: ^8.1.7
   stomp_dart_client: ^3.0.1
+  url_launcher: ^6.3.0
+  firebase_storage: ^12.3.0
+  sqflite: ^2.3.0
+  path: ^1.9.0
 
 dev_dependencies:
   flutter_test:

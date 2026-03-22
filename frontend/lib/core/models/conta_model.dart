@@ -13,6 +13,11 @@ class ContaModel {
     this.agencia,
   });
 
+  Map<String, dynamic> toJson() => {
+    'id': id, 'nome': nome, 'saldo': saldo,
+    'numeroConta': numeroConta, 'agencia': agencia,
+  };
+
   factory ContaModel.fromJson(Map<String, dynamic> json) => ContaModel(
         id: json['id'] as int,
         nome: json['nome'] as String,

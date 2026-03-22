@@ -29,6 +29,8 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
   bool _loadingMore = false;
   bool _hasMore = true;
   int _currentPage = 0;
+  bool _isOffline = false;
+  DateTime? _cachedAt;
 
   DateTime? _filterInicio;
   DateTime? _filterFim;
@@ -81,7 +83,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
       _hasMore = true;
     });
     try {
-      final result = await _service.listar(
+      final (result, isOffline, cachedAt) = await _service.listar(
         inicio: _filterInicio,
         fim: _filterFim,
         page: 0,
@@ -92,6 +94,8 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
           _transactions = result.content;
           _hasMore = result.page + 1 < result.totalPages;
           _currentPage = result.page;
+          _isOffline = isOffline;
+          _cachedAt = cachedAt;
         });
       }
     } catch (e) {
@@ -109,7 +113,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
     if (!_hasMore || _loadingMore) return;
     setState(() => _loadingMore = true);
     try {
-      final result = await _service.listar(
+      final (result, ignore1, ignore2) = await _service.listar(
         inicio: _filterInicio,
         fim: _filterFim,
         page: _currentPage + 1,
@@ -309,6 +313,21 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
       ),
       body: Column(
         children: [
+          if (_isOffline)
+            Container(
+              color: Colors.orange.shade100,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              child: Row(
+                children: [
+                  const Icon(Icons.wifi_off, size: 16, color: Colors.orange),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Dados offline — atualizado em ${_cachedAt != null ? TimeOfDay.fromDateTime(_cachedAt!).format(context) : "?"}',
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                ],
+              ),
+            ),
           if (_filterInicio != null)
             Container(
               color: Theme.of(context).colorScheme.primaryContainer,
