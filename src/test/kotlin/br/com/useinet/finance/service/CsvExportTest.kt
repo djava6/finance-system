@@ -60,7 +60,7 @@ class CsvExportTest {
         assertThat(content).contains("Período:")
         assertThat(content).contains("Total Receitas:")
         assertThat(content).contains("Total Despesas:")
-        assertThat(content).contains("Saldo:")
+        assertThat(content).contains("Resultado do período:")
         assertThat(content).contains("Todas as transações")
     }
 

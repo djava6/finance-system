@@ -171,7 +171,7 @@ class TransacaoService(
         csv.append("Período:;${escapeCsvBr(periodo)}\n")
         csv.append("Total Receitas:;${fmtDecimal(totalReceitas)}\n")
         csv.append("Total Despesas:;${fmtDecimal(totalDespesas)}\n")
-        csv.append("Saldo:;${fmtDecimal(saldo)}\n")
+        csv.append("Resultado do período:;${fmtDecimal(saldo)}\n")
         csv.append("\n")
 
         // Pré-calcula saldo acumulado após cada transação por conta (extrato)
