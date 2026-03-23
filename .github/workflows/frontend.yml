@@ -36,7 +36,7 @@ jobs:
         working-directory: frontend
         run: |
           flutter pub get
-          flutter test test/ --reporter json > test-results.json
+          flutter test test/ --reporter json > test-results.json 2>test-errors.txt || (cat test-errors.txt && exit 1)
 
       - name: Publicar resumo no Summary
         if: always()
