@@ -21,6 +21,9 @@ jobs:
   test:
     name: Flutter Widget Tests
     runs-on: ubuntu-latest
+    permissions:
+      checks: write
+      contents: read
 
     steps:
       - name: Checkout
