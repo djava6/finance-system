@@ -21,9 +21,6 @@ jobs:
   test:
     name: Flutter Widget Tests
     runs-on: ubuntu-latest
-    permissions:
-      checks: write
-      contents: read
 
     steps:
       - name: Checkout
@@ -39,16 +36,29 @@ jobs:
         working-directory: frontend
         run: |
           flutter pub get
-          dart pub global activate junitreport
-          flutter test test/ --reporter json | tojunit --output test-results.xml
+          flutter test test/ --reporter json > test-results.json
 
-      - name: Publish test report
-        uses: dorny/test-reporter@v1
+      - name: Publicar resumo no Summary
         if: always()
-        with:
-          name: Testes Frontend (Widget)
-          path: frontend/test-results.xml
-          reporter: java-junit
+        working-directory: frontend
+        run: |
+          passed=$(grep -o '"result":"success"' test-results.json | wc -l | tr -d ' ')
+          failed=$(grep -o '"result":"error"' test-results.json | wc -l | tr -d ' ')
+          total=$((passed + failed))
+          echo "## 🧪 Testes Frontend (Widget)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| | Quantidade |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| ✅ Passaram | $passed |" >> $GITHUB_STEP_SUMMARY
+          echo "| ❌ Falharam | $failed |" >> $GITHUB_STEP_SUMMARY
+          echo "| 📊 Total | $total |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "$failed" -gt 0 ]; then
+            echo "### Falhas" >> $GITHUB_STEP_SUMMARY
+            grep -o '"name":"[^"]*","result":"error"' test-results.json | \
+              sed 's/"name":"//;s/","result":"error"//' | \
+              while read t; do echo "- ❌ $t" >> $GITHUB_STEP_SUMMARY; done
+          fi
 
   # ─────────────────────────────────────
   # Job 2: Flutter build (valida PR)
