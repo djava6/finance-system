@@ -46,7 +46,7 @@ jobs:
         uses: dorny/test-reporter@v1
         if: always()
         with:
-          name: Flutter Widget Tests
+          name: Relatório de Testes
           path: frontend/test-results.xml
           reporter: java-junit
 
