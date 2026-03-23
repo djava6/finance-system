@@ -36,7 +36,16 @@ jobs:
         working-directory: frontend
         run: |
           flutter pub get
-          flutter test test/
+          dart pub global activate junitreport
+          flutter test test/ --reporter json | tojunit --output test-results.xml
+
+      - name: Publish test report
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: Flutter Widget Tests
+          path: frontend/test-results.xml
+          reporter: java-junit
 
   # ─────────────────────────────────────
   # Job 2: Flutter build (valida PR)
