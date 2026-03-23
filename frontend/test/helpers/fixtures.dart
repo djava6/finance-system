@@ -72,3 +72,17 @@ const novaTransacaoJson = '''
   "data": "2026-03-22", "recorrente": false
 }
 ''';
+
+const orcamentosJson = '''
+[
+  {"id": 1, "categoriaId": 1, "categoria": "Alimentação", "valorLimite": 1000.00, "valorGasto": 800.00, "percentual": 80.0, "mes": 3, "ano": 2026},
+  {"id": 2, "categoriaId": 3, "categoria": "Transporte", "valorLimite": 500.00, "valorGasto": 200.00, "percentual": 40.0, "mes": 3, "ano": 2026}
+]
+''';
+
+const metasJson = '''
+[
+  {"id": 1, "nome": "Reserva de emergência", "valorAlvo": 10000.00, "valorAtual": 3000.00, "percentual": 30.0, "concluida": false},
+  {"id": 2, "nome": "Viagem", "valorAlvo": 5000.00, "valorAtual": 5000.00, "percentual": 100.0, "concluida": true}
+]
+''';

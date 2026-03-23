@@ -40,8 +40,43 @@ MockClient createMockHttpClient() {
       return http.Response('', 204);
     }
 
-    if (path.endsWith('/orcamentos') || path.endsWith('/metas')) {
-      return http.Response('[]', 200,
+    if (path.contains('/transactions/') && request.method == 'PUT') {
+      return http.Response(novaTransacaoJson, 200,
+          headers: {'content-type': 'application/json'});
+    }
+
+    if (path.endsWith('/users/me') && request.method == 'PUT') {
+      return http.Response(
+          '{"uid":"test-uid","email":"teste@exemplo.com","nome":"Usuário Atualizado"}',
+          200,
+          headers: {'content-type': 'application/json'});
+    }
+
+    if (path.contains('/contas/') && request.method == 'PUT') {
+      return http.Response(contasJson.replaceAll('[', '').replaceAll(']', ''), 200,
+          headers: {'content-type': 'application/json'});
+    }
+
+    if (path.contains('/metas/') && request.method == 'POST') {
+      return http.Response('{"id":1,"nome":"Reserva de emergência","valorAlvo":10000.00,"valorAtual":3500.00,"percentual":35.0,"concluida":false}', 200,
+          headers: {'content-type': 'application/json'});
+    }
+
+    if (path.endsWith('/orcamentos')) {
+      if (request.method == 'POST') {
+        return http.Response('{"id":99,"categoriaId":1,"categoria":"Alimentação","valorLimite":1000.00,"valorGasto":0,"percentual":0,"mes":3,"ano":2026}', 201,
+            headers: {'content-type': 'application/json'});
+      }
+      return http.Response(orcamentosJson, 200,
+          headers: {'content-type': 'application/json'});
+    }
+
+    if (path.endsWith('/metas')) {
+      if (request.method == 'POST') {
+        return http.Response('{"id":99,"nome":"Nova Meta","valorAlvo":1000.00,"valorAtual":0,"percentual":0,"concluida":false}', 201,
+            headers: {'content-type': 'application/json'});
+      }
+      return http.Response(metasJson, 200,
           headers: {'content-type': 'application/json'});
     }
 
