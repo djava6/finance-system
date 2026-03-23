@@ -46,7 +46,7 @@ jobs:
         uses: dorny/test-reporter@v1
         if: always()
         with:
-          name: Relatório de Testes
+          name: Testes Frontend (Widget)
           path: frontend/test-results.xml
           reporter: java-junit
 
